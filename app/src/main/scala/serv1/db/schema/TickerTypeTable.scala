@@ -1,7 +1,7 @@
 package serv1.db.schema
 
 import serv1.db.DB
-import serv1.model.ticker.BarSizes
+import serv1.model.ticker.{BarSizes, TickerLoadType}
 import serv1.model.ticker.BarSizes.BarSize
 import slick.ast.BaseTypedType
 import slick.jdbc.JdbcType
@@ -11,6 +11,7 @@ import slick.lifted.Tag
 
 object TickerTypeTable {
   val query = TableQuery[TickerTypeTable]
+  def findTicker(tt: TickerLoadType): TickerTypeTable => Rep[Boolean] = (e:TickerTypeTable) => e.name === tt.tickerType.name && e.exchange === tt.tickerType.exchange && e.typ === tt.tickerType.typ && e.barSize === tt.barSize
 }
 
 class TickerTypeTable(tag: Tag) extends Table[TickerTypeDB](tag, "TICKER") {

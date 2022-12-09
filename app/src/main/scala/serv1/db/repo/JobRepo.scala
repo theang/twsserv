@@ -20,15 +20,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object JobRepo extends JsonFormats {
   def createTickerJob(tickersToLoad: List[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID = {
     val id = UUID.randomUUID()
-    DB.db.run(DBIO.seq(JobTable.query += Job(id,
+    Await.result(DB.db.run(DBIO.seq(JobTable.query += Job(id,
       TickerJobState(JobStatuses.IN_PROGRESS,
-        tickers = tickersToLoad, List.empty, from, to).toJson.compactPrint)))
+        tickers = tickersToLoad, List.empty, from, to).asInstanceOf[JobState].toJson.compactPrint))), Duration.Inf)
     id
   }
 
   def getTickerJobs(jobId : UUID): Seq[TickerJobState] = {
     val query = JobTable.query.filterIf(jobId != null)(_.jobId === jobId)
-    val jobs: Seq[Job] = Await.result(DB.db.run[Seq[Job]](query.result), Configuration.callDuration)
+    val jobs: Seq[Job] = Await.result(DB.db.run[Seq[Job]](query.result), Duration.Inf)
     jobs.map { job =>
       val st: JobState = job.state.parseJson.convertTo[JobState]
       st match {
@@ -52,12 +52,22 @@ object JobRepo extends JsonFormats {
 
   def updateJob(jobId: UUID, ticker: TickerLoadType): Unit = {
     val query = JobTable.query.filter(_.jobId === jobId)
-    val action = query.result.flatMap {
-      case t: TickerJobState =>
-        query.map(_.state).update(updateTickerJobState(t, ticker).toJson.compactPrint)
-      case st@default =>
-        DBIO.failed(new Exception("Can update only Ticker Job"))
+    val action = query.result.headOption.flatMap {
+      case Some(job) =>
+        val st: JobState = job.state.parseJson.convertTo[JobState]
+        st match {
+          case t: TickerJobState =>
+            query.map(_.state).update(updateTickerJobState(t, ticker).asInstanceOf[JobState].toJson.compactPrint)
+          case default =>
+            DBIO.failed(new Exception("Can update only Ticker Job"))
+        }
+      case None =>
+        DBIO.failed(new Exception(s"No job found for id: $jobId"))
     }.transactionally
-    DB.db.run(action)
+    Await.result(DB.db.run(action), Duration.Inf)
+  }
+
+  def removeJob(jobId: UUID): Unit = {
+    Await.result(DB.db.run(JobTable.query.filter(_.jobId === jobId).delete), Duration.Inf)
   }
 }

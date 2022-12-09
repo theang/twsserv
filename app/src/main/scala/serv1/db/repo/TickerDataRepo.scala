@@ -22,11 +22,12 @@ object TickerDataRepo {
     new ConcurrentHashMap[TickerLoadType, Boolean]().asScala
 
   def init(): Unit = {
-    val tables = Await.result(DB.db.run(MTable.getTables), Configuration.callDuration)
+    val tables = Await.result(DB.db.run(MTable.getTables), Duration.Inf)
     tables.foreach {
       table =>
         TickerDataTableNameUtil.parseTableName(table.name.name).map {
           tt => createdTables.addOne((tt, true))
+            TickerTypeRepo.addTickerType(tt)
         }
     }
   }
@@ -40,6 +41,7 @@ object TickerDataRepo {
         Await.result(DB.db.run(DBIO.seq(tableQuery.schema.createIfNotExists)), Duration.Inf)
       }
       createdTables.addOne((ticker, true))
+      TickerTypeRepo.addTickerType(ticker)
     }
   }
 
