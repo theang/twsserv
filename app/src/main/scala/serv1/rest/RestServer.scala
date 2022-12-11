@@ -1,6 +1,6 @@
 package serv1.rest
 
-import akka.actor.typed.{Behavior, PostStop}
+import akka.actor.typed.{ActorSystem, Behavior, PostStop}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.Http
@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives.{complete, get, path}
 import akka.http.scaladsl.server.RouteConcatenation
 import serv1.client.TWSClient
+import serv1.db.repo.impl.{JobRepo, TickerDataRepo}
 import serv1.job.{TickerJobActor, TickerJobService}
 import serv1.rest.loaddata.{CheckLoadJobStateActor, LoadData, LoadDataActor, LoadService}
 
@@ -16,16 +17,19 @@ import scala.concurrent.Future
 
 object RestServer extends RouteConcatenation {
   sealed trait Message
+
   private final case class StartFailed(cause: Throwable) extends Message
+
   private final case class Started(binding: ServerBinding) extends Message
+
   case object Stop extends Message
 
   def apply(host: String, port: Int): Behavior[Message] = Behaviors.setup { ctx =>
 
-    implicit val system = ctx.system
+    implicit val system: ActorSystem[Nothing] = ctx.system
 
-    val tickerJobService = new TickerJobService(TWSClient)
-    val tickerActorRef = ctx.spawn(TickerJobActor(tickerJobService), "tickerJobActor")
+    val tickerJobService = new TickerJobService(TWSClient, JobRepo, TickerDataRepo)
+    val tickerActorRef = ctx.spawn(TickerJobActor(tickerJobService, JobRepo), "tickerJobActor")
     val loadService = new LoadService(tickerActorRef)
     val loadDataActorRef = ctx.spawn(LoadDataActor(loadService), "loadDataActor")
     val checkJobActorRef = ctx.spawn(CheckLoadJobStateActor(loadService), "checkJobStateActor")
@@ -74,6 +78,7 @@ object RestServer extends RouteConcatenation {
           // we cannot stop until starting has completed
           starting(wasStopped = true)
       }
+
     starting(wasStopped = false)
   }
 }

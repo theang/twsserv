@@ -1,23 +1,22 @@
-package serv1.db.repo
+package serv1.db.repo.impl
 
-import serv1.Configuration
 import serv1.db.DB
+import serv1.db.repo.intf.JobRepoIntf
 import serv1.db.schema.{Job, JobTable}
 import serv1.job.{JobState, TickerJobState}
 import serv1.model.job.JobStatuses
 import serv1.model.ticker.TickerLoadType
 import serv1.rest.JsonFormats
-
-import java.util.UUID
 import slick.jdbc.PostgresProfile.api._
 import spray.json._
 
 import java.time.LocalDateTime
+import java.util.UUID
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
-object JobRepo extends JsonFormats {
+object JobRepo extends JsonFormats with JobRepoIntf {
   def createTickerJob(tickersToLoad: List[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID = {
     val id = UUID.randomUUID()
     Await.result(DB.db.run(DBIO.seq(JobTable.query += Job(id,
@@ -26,7 +25,7 @@ object JobRepo extends JsonFormats {
     id
   }
 
-  def getTickerJobs(jobId : UUID): Seq[TickerJobState] = {
+  def getTickerJobs(jobId: UUID): Seq[TickerJobState] = {
     val query = JobTable.query.filterIf(jobId != null)(_.jobId === jobId)
     val jobs: Seq[Job] = Await.result(DB.db.run[Seq[Job]](query.result), Duration.Inf)
     jobs.map { job =>

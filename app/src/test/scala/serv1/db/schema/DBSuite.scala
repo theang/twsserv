@@ -4,19 +4,17 @@ import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
 import serv1.db.DB
-import serv1.db.repo.TickerDataRepo
+import serv1.db.TestData._
+import serv1.db.repo.impl.TickerDataRepo
 import serv1.job.TickerJobState
 import serv1.model.HistoricalData
 import serv1.model.job.JobStatuses
-import serv1.model.ticker.{BarSizes, TickerLoadType, TickerType}
+import serv1.model.ticker.{BarSizes, TickerLoadType}
 import serv1.rest.JsonFormats
 import slick.dbio.DBIO
 import slick.jdbc.PostgresProfile.api._
 import spray.json._
-import serv1.db.TestData._
 
-import java.time.LocalDateTime
-import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions

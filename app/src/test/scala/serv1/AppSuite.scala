@@ -3,8 +3,8 @@
  */
 package serv1
 
-import org.scalatest.funsuite.AnyFunSuite
 import org.junit.runner.RunWith
+import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
 import serv1.app.App
 

@@ -25,7 +25,7 @@ repositories {
 dependencies {
     val scalaVersion = "2.13"
     val akkaHttpVersion = "10.2.9"
-    val akkaVersion = "2.6.8"
+    val akkaVersion = "2.7.0"
     val swaggerVersion = "2.2.1"
 
     // Use Scala 2.13 in our library project
@@ -36,8 +36,12 @@ dependencies {
 
     // Use Scalatest for testing our library
     testImplementation("junit:junit:4.13.1")
-    testImplementation("org.scalatest:scalatest_2.13:3.2.3")
-    testImplementation("org.scalatestplus:junit-4-13_2.13:3.2.2.0")
+    testImplementation("org.scalatest:scalatest_${scalaVersion}:3.2.14")
+    testImplementation("org.scalamock:scalamock_${scalaVersion}:5.1.0")
+    testImplementation("org.scalactic:scalactic_${scalaVersion}:3.2.14")
+    testImplementation("org.scalatestplus:junit-4-13_${scalaVersion}:3.2.2.0")
+    testImplementation("com.typesafe.akka:akka-testkit_${scalaVersion}:${akkaVersion}")
+    testImplementation("com.typesafe.akka:akka-actor-testkit-typed_${scalaVersion}:${akkaVersion}")
 
     // Need scala-xml at test runtime
     testRuntimeOnly("org.scala-lang.modules:scala-xml_2.13:1.2.0")
@@ -58,12 +62,15 @@ dependencies {
     implementation("com.typesafe.slick:slick-hikaricp_${scalaVersion}:3.4.0")
     implementation("com.typesafe.slick:slick-codegen_${scalaVersion}:3.4.0")
     implementation("org.postgresql:postgresql:42.5.1")
-    implementation("org.slf4j:slf4j-nop:2.0.5")
 
     implementation("io.swagger.core.v3:swagger-core-jakarta:${swaggerVersion}")
     implementation("io.swagger.core.v3:swagger-annotations-jakarta:${swaggerVersion}")
     implementation("io.swagger.core.v3:swagger-models-jakarta:${swaggerVersion}")
     implementation("io.swagger.core.v3:swagger-jaxrs2-jakarta:${swaggerVersion}")
+
+    implementation("com.typesafe.akka:akka-slf4j_${scalaVersion}:${akkaVersion}")
+    implementation("ch.qos.logback:logback-classic:1.4.5")
+
 
     implementation("", "TwsApi")
 }

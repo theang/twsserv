@@ -17,7 +17,7 @@ object TickerDataTable {
 
 class TickerDataTableGen(tt: TickerLoadType) {
 
-  val tableName = TickerDataTableNameUtil.formatTableName(tt)
+  val tableName: String = TickerDataTableNameUtil.formatTableName(tt)
 
   class TickerDataTable(tag: Tag) extends Table[TickerData](tag, tableName) {
     def id = column[Int]("ID", O.PrimaryKey, O.AutoInc)
@@ -34,8 +34,8 @@ class TickerDataTableGen(tt: TickerLoadType) {
 
     def volume = column[Long]("VOL")
 
-    def * = (id, time, open, high, low, close, volume) <> ((TickerData.apply _ ).tupled, TickerData.unapply)
+    def * = (id, time, open, high, low, close, volume) <> ((TickerData.apply _).tupled, TickerData.unapply)
 
-    def timeIndex = index("IND_TIME", time, unique = true)
+    def timeIndex = index(s"IND_TIME_$tableName", time, unique = true)
   }
 }

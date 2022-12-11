@@ -1,9 +1,9 @@
 package serv1.app
 
-import akka.actor.typed.{ActorSystem, Props}
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.server.RouteConcatenation
 import serv1.db.DB
-import serv1.db.repo.TickerDataRepo
+import serv1.db.repo.impl.TickerDataRepo
 import serv1.rest.RestServer
 
 import scala.concurrent.Await

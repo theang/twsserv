@@ -4,7 +4,9 @@ import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
 import serv1.db.TestData._
+import serv1.db.repo.impl.{JobRepo, TickerDataRepo, TickerTypeRepo}
 import serv1.model.job.JobStatuses
+import serv1.util.LocalDateTimeUtil
 
 @RunWith(classOf[JUnitRunner])
 class RepoSuite extends AnyFunSuite {
@@ -39,5 +41,29 @@ class RepoSuite extends AnyFunSuite {
       }
     })()
     JobRepo.removeJob(id)
+  }
+
+  test("ticker repo tests") {
+    TickerTypeRepo.addTickerType(testTicker)
+    val tickers = TickerTypeRepo.queryTickers()
+    assert(tickers === List(testTicker))
+    TickerTypeRepo.removeTickerType(testTicker)
+    val tickersEmpty = TickerTypeRepo.queryTickers()
+    assert(tickersEmpty === List())
+  }
+
+  test("ticker data repo tests") {
+    TickerDataRepo.truncate(testTicker)
+    TickerDataRepo.write(testTicker, List(testHistoricalData))
+    TickerDataRepo.write(testTicker, List(testHistoricalData1))
+    TickerDataRepo.write(testTicker, List(testHistoricalData2))
+    val allVals = TickerDataRepo.read(testTicker)
+    assert(allVals === List(testHistoricalData, testHistoricalData1, testHistoricalData2))
+    val oneVal = TickerDataRepo.readRange(testTicker, LocalDateTimeUtil.toEpoch(from), LocalDateTimeUtil.toEpoch(from)).toList
+    assert(oneVal === List(testHistoricalData))
+    val lastVal = TickerDataRepo.readRange(testTicker, LocalDateTimeUtil.toEpoch(to), LocalDateTimeUtil.toEpoch(to)).toList
+    assert(lastVal === List(testHistoricalData2))
+    TickerDataRepo.truncate(testTicker)
+    TickerTypeRepo.removeTickerType(testTicker)
   }
 }

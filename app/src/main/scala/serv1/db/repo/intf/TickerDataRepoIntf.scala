@@ -1,0 +1,14 @@
+package serv1.db.repo.intf
+
+import serv1.model.HistoricalData
+import serv1.model.ticker.TickerLoadType
+
+trait TickerDataRepoIntf {
+  def write(ticker: TickerLoadType, data: List[HistoricalData]): Unit
+
+  def read(ticker: TickerLoadType): Seq[HistoricalData]
+
+  def readRange(ticker: TickerLoadType, from: Long, to: Long): Seq[HistoricalData]
+
+  def truncate(ticker: TickerLoadType): Unit
+}

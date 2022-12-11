@@ -1,19 +1,25 @@
 package serv1.rest.loaddata
 
-import akka.actor.typed.ActorRef
-import serv1.db.repo.JobRepo
-import serv1.job.TickerJobState
-import serv1.job.TickerJobActor
+import akka.actor.typed.scaladsl.AskPattern.{Askable, schedulerFromActorSystem}
+import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.util.Timeout
+import serv1.db.repo.impl.JobRepo
+import serv1.job.{TickerJobActor, TickerJobState}
 import serv1.model.ticker.TickerLoadType
 import serv1.rest.JsonFormats
 
 import java.time.LocalDateTime
 import java.util.UUID
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
-class LoadService(tickerJobActorRef: ActorRef[TickerJobActor.Message]) extends JsonFormats {
+class LoadService(tickerJobActorRef: ActorRef[TickerJobActor.Run])(implicit system: ActorSystem[_]) extends JsonFormats {
+  implicit val timeout: Timeout = 3.seconds
+
   def load(ticker: List[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID = {
     val jobId = JobRepo.createTickerJob(ticker, from, to)
-    tickerJobActorRef ! TickerJobActor.Run(jobId)
+    val result = tickerJobActorRef.ask(replyTo => TickerJobActor.Run(jobId, replyTo))
+    Await.result(result, Duration.Inf)
     jobId
   }
 
