@@ -4,9 +4,7 @@ import com.ib.client._
 import com.typesafe.config.Config
 import serv1.client.converters.{BarSizeConverter, ContractConverter}
 import serv1.client.operations.ClientOperationHandlers
-import serv1.client.operations.ClientOperationHandlers.ErrorHandler
 import serv1.config.ServConfig
-import serv1.model.HistoricalData
 import serv1.util.LocalDateTimeUtil
 import slick.util.Logging
 
@@ -20,14 +18,35 @@ object TWSClient extends DataClient with EWrapper with Logging {
   var signal = new EJavaSignal
   var client: EClientSocket = new EClientSocket(this, signal)
   var reader = new EReader(client, signal)
+  val readerThreadState = new AtomicInteger(1)
   var thread: Thread = new Thread {
     override def run(): Unit = {
-      while (client.isConnected) {
-        signal.waitForSignal()
-        try {
+      while (readerThreadState.get() == 1) {
+        if (client.isConnected) {
+          logger.debug("client is connected")
+          // it is possible we have messages
           reader.processMsgs()
-        } catch {
-          case exc: Exception => error(exc)
+          while (client.isConnected) {
+            logger.debug("while client is connected")
+            signal.waitForSignal()
+            try {
+              logger.debug("processing messages")
+              reader.processMsgs()
+              logger.debug("processed")
+            } catch {
+              case exc: Exception => error(exc)
+            }
+          }
+        } else {
+          readerThreadState.synchronized {
+            logger.debug("client is not connected")
+            // wait connection setup
+            if (!client.isConnected) {
+              logger.debug("client is not connected, waiting in sync block for client notification")
+              readerThreadState.wait()
+              logger.debug("signalled to loop in reader thread")
+            }
+          }
         }
       }
     }
@@ -36,16 +55,96 @@ object TWSClient extends DataClient with EWrapper with Logging {
     thread.start()
   }
 
-  def checkConnected(): Unit = {
-    if (!client.isConnected) {
-      client.eConnect(config.getString("host"),
-        config.getString("port").toInt,
-        config.getString("clientId").toInt)
+  def dropIsConnectedFlagIfClientNotConnected(): Unit = {
+    if ((!client.isConnected) && (isConnected.get() != 0)) {
+      this.synchronized {
+        if ((!client.isConnected) && (isConnected.get() != 0)) {
+          isConnected.set(0)
+        }
+      }
     }
   }
 
+  def checkOrderSequence(): Unit = {
+    if (orderSequence.get() == 0) {
+      logger.debug("order sequence is not set, meaning nextValidId was not yet called")
+      //sequence is not set yet
+      orderSequence.synchronized {
+        logger.debug("sync on order sequence")
+        //check here after blocking
+        if (orderSequence.get() == 0) {
+          logger.debug("sync is not yet set")
+          logger.debug("Call client reqIds")
+          client.reqIds(-1)
+          //wait nextId to set sequence
+          logger.debug("block wait")
+          orderSequence.wait()
+          logger.debug("wait is done, order sequence is set here, set connected")
+        } else {
+          //already set
+          logger.debug("order sequence already set here")
+        }
+      }
+    } else {
+      logger.debug("order sequence is not zero, set connected")
+    }
+  }
+
+  def connect(): Unit = {
+    if (!client.isConnected) {
+      logger.debug("client is not connected")
+      //if client not connected
+      //clear sequence
+      sequence.set(0)
+      logger.debug("reset sequence")
+
+      //call connect asynchronously
+      logger.debug("start connecting")
+      client.eConnect(config.getString("host"),
+        config.getString("port").toInt,
+        config.getString("clientId").toInt)
+      reader = new EReader(client, signal)
+      readerThreadState.synchronized {
+        readerThreadState.notify()
+      }
+      logger.debug("connection established")
+      isConnected.set(if (client.isConnected) 1 else 0)
+    } else {
+      //it seems isConnected wrongly set to 0
+      logger.debug("client is connected, isConnected is wrongly set to 0")
+      isConnected.set(1)
+    }
+  }
+
+  def checkConnected(): Unit = {
+    try {
+      //drop isConnected if discover not connected
+      dropIsConnectedFlagIfClientNotConnected()
+
+      if (isConnected.get() == 0) {
+        //not connected
+        logger.debug("not connected")
+        this.synchronized {
+          logger.debug("synchronized on this")
+          //was connected before synchronized?
+          if (isConnected.get() == 0) {
+            logger.debug("still not connected")
+            //not connected
+            connect()
+          }
+        }
+      }
+    } catch {
+      case exc: InterruptedException =>
+        logger.error("Interrupted while waiting for connection", exc)
+        throw new RuntimeException("Thread is interrupted", exc)
+    }
+  }
+
+  val isConnected = new AtomicInteger(0)
   val sequence = new AtomicInteger(1)
-  val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HH:mm:ss")
+  val orderSequence = new AtomicInteger(0)
+  val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HH:mm:ss")
 
 
   def loadHistoricalData(from: Long, to: Long, ticker: String, exchange: String, typ: String, barSize: Int, prec: Int,
@@ -59,7 +158,7 @@ object TWSClient extends DataClient with EWrapper with Logging {
     val duration = s"${(to - from) / 1000} S"
     val barSizeStr = BarSizeConverter.getBarSize(barSize)
     val dateFormat = BarSizeConverter.getDateFormat(barSize)
-    logger.debug(s"historicalData request: ${reqN}: ${contract}, ${queryTime}, ${duration}, ${barSizeStr}")
+    logger.debug(s"historicalData request: $reqN: $contract, $queryTime, $duration, $barSizeStr")
     ClientOperationHandlers.addHistoricalDataHandler(reqN, prec, dateFormat, cont, error)
     client.reqHistoricalData(reqN, contract, queryTime, duration, barSizeStr, "TRADES", 1, dateFormat, false, null)
   }
@@ -90,7 +189,17 @@ object TWSClient extends DataClient with EWrapper with Logging {
 
   override def accountDownloadEnd(s: String): Unit = ???
 
-  override def nextValidId(i: Int): Unit = ???
+  override def nextValidId(i: Int): Unit = {
+    //wait here until allowed to set
+    //to synchronize with checkConnected method
+    logger.debug("nextValidId: $i")
+    orderSequence.synchronized {
+      logger.debug("setting in sync block")
+      orderSequence.set(i)
+      logger.debug("notify thread to unblock connection thread")
+      orderSequence.notify()
+    }
+  }
 
   override def contractDetails(i: Int, contractDetails: ContractDetails): Unit = ???
 
@@ -113,11 +222,12 @@ object TWSClient extends DataClient with EWrapper with Logging {
   override def receiveFA(i: Int, s: String): Unit = ???
 
   override def historicalData(i: Int, bar: Bar): Unit = {
-    ClientOperationHandlers.handleHistoricalData(i, bar, false)
+    logger.debug(s"historical data: $i")
+    ClientOperationHandlers.handleHistoricalData(i, bar, last = false)
   }
 
   override def historicalDataEnd(i: Int, s: String, s1: String): Unit = {
-    logger.debug(s"Historical end: ${i}, ${s}, ${s1}")
+    logger.debug(s"Historical end: $i, $s, $s1")
     ClientOperationHandlers.handleHistoricalData(i, null, last = true)
   }
 
@@ -167,16 +277,22 @@ object TWSClient extends DataClient with EWrapper with Logging {
   }
 
   override def error(s: String): Unit = {
-    logger.warn(s"TWSClient warning: ${s}")
+    logger.warn(s"TWSClient warning: $s")
   }
 
   override def error(i: Int, i1: Int, s: String): Unit = {
+    logger.debug(s"error: $i, $i1, $s")
     ClientOperationHandlers.handleError(i, i1, s)
   }
 
   override def connectionClosed(): Unit = ???
 
-  override def connectAck(): Unit = ???
+  override def connectAck(): Unit = {
+    readerThreadState.synchronized {
+      logger.debug("connectAck")
+      readerThreadState.notify()
+    }
+  }
 
   override def positionMulti(i: Int, s: String, s1: String, contract: Contract, v: Double, v1: Double): Unit = ???
 
@@ -200,7 +316,7 @@ object TWSClient extends DataClient with EWrapper with Logging {
 
   override def tickNews(i: Int, l: Long, s: String, s1: String, s2: String, s3: String): Unit = ???
 
-  override def smartComponents(i: Int, map: util.Map[Integer, Map.Entry[String, Character]]): Unit = ???
+  override def smartComponents(i: Int, map: util.Map[Integer, util.Map.Entry[String, Character]]): Unit = ???
 
   override def tickReqParams(i: Int, v: Double, s: String, i1: Int): Unit = ???
 

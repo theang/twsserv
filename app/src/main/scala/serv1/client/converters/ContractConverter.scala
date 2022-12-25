@@ -10,6 +10,7 @@ object ContractConverter {
     var secType = SecType.get(typ)
     contract.secType(secType)
     contract.symbol(ticker)
+    contract.currency("USD")
     contract
   }
 }

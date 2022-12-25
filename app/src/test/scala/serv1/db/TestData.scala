@@ -11,6 +11,10 @@ import java.util.UUID
 
 object TestData {
   val TestID: UUID = UUID.randomUUID()
+  val xomTicker: String = "XOM"
+  val xomTickerType: String = "STK"
+  val xomTickerExch: String = "NYSE"
+  //val xomTickerExch: String = "SMART"
   val testTicker: TickerLoadType = TickerLoadType(TickerType("TEST", "EXC", "STK", 2), BarSizes.DAY)
   val testTicker2: TickerLoadType = TickerLoadType(TickerType("TEST2", "EXC", "STK", 2), BarSizes.MIN15)
   val testTickers: List[TickerLoadType] = List(testTicker, testTicker2)

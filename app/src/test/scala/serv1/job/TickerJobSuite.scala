@@ -13,7 +13,6 @@ import serv1.job.TickerJobActor.Run
 class TickerJobSuite extends TestService with MockFactory {
 
   test("call service") {
-
     val clientMock = mock[DataClient]
     (clientMock.loadHistoricalData _).expects(*, *, *, *, *, *, *, *, *).returning(()).twice()
     val jobRepo = mock[JobRepoIntf]

@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 @Path("loadData")
 class LoadData(loadDataActor: ActorRef[LoadDataRequestRef], checkLoadJobState: ActorRef[CheckLoadJobRef])(implicit system: ActorSystem[_])
   extends Directives with JsonFormats {
-  implicit val timeout: Timeout = 3.seconds
+  implicit val timeout: Timeout = 1000.seconds
 
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))

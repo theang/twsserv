@@ -14,12 +14,11 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class LoadService(tickerJobActorRef: ActorRef[TickerJobActor.Run])(implicit system: ActorSystem[_]) extends JsonFormats {
-  implicit val timeout: Timeout = 3.seconds
+  implicit val timeout: Timeout = 1000.seconds
 
   def load(ticker: List[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID = {
     val jobId = JobRepo.createTickerJob(ticker, from, to)
-    val result = tickerJobActorRef.ask(replyTo => TickerJobActor.Run(jobId, replyTo))
-    Await.result(result, Duration.Inf)
+    tickerJobActorRef.ask(replyTo => TickerJobActor.Run(jobId, replyTo))
     jobId
   }
 
