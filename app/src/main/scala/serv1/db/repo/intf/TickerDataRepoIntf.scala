@@ -4,7 +4,7 @@ import serv1.model.HistoricalData
 import serv1.model.ticker.TickerLoadType
 
 trait TickerDataRepoIntf {
-  def write(ticker: TickerLoadType, data: List[HistoricalData]): Unit
+  def write(ticker: TickerLoadType, data: Seq[HistoricalData]): Unit
 
   def read(ticker: TickerLoadType): Seq[HistoricalData]
 

@@ -16,7 +16,7 @@ class TickerJobService (client: DataClient,
                         jobRepo: JobRepoIntf,
                         tickerDataRepo: TickerDataRepoIntf) extends Logging {
 
-  def saveHistoricalData(jobId: UUID, ticker: TickerLoadType, data: List[HistoricalData], last: Boolean): Unit = {
+  def saveHistoricalData(jobId: UUID, ticker: TickerLoadType, data: Seq[HistoricalData], last: Boolean): Unit = {
     tickerDataRepo.write(ticker, data)
     if (last) {
       jobRepo.updateJob(jobId, ticker)
@@ -34,7 +34,7 @@ class TickerJobService (client: DataClient,
       ticker.tickerType.typ,
       BarSizeConverter.getBarSizeSeconds(ticker.barSize),
       ticker.tickerType.prec,
-      (data: List[HistoricalData], last: Boolean) => saveHistoricalData(jobId, ticker, data, last),
+      (data: Seq[HistoricalData], last: Boolean) => saveHistoricalData(jobId, ticker, data, last),
       errorCallback)
   }
 

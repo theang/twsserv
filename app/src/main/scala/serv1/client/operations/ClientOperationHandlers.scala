@@ -9,16 +9,16 @@ import slick.util.Logging
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import scala.collection.concurrent
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.jdk.CollectionConverters._
 
 object ClientOperationHandlers extends Logging {
   val THREADS_NUMBER = 5
-  implicit val context = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(THREADS_NUMBER))
+  implicit val context: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(THREADS_NUMBER))
   val LOAD_CHUNK_SIZE: Int = config.getInt("loadChunkSize")
   type ErrorHandler = (Int, String) => Unit
 
-  type HistoricalDataOperationCallback = (List[HistoricalData], Boolean) => Unit
+  type HistoricalDataOperationCallback = (Seq[HistoricalData], Boolean) => Unit
   case class HistoricalDataOperation(barConv: Bar => HistoricalData,
                                      clOp: ClientOperation[ArrayBuffer[HistoricalData], HistoricalDataOperationCallback])
 
@@ -61,7 +61,7 @@ object ClientOperationHandlers extends Logging {
           removeHandlers(reqN)
         }
       case None =>
-        logger.warn(s"handleHistoricalData: reqN = ${reqN};" +
+        logger.warn(s"handleHistoricalData: reqN = $reqN;" +
           s" no request found by number")
     }
   }
@@ -71,7 +71,7 @@ object ClientOperationHandlers extends Logging {
       case Some(errH) =>
         errH(code, msg)
       case None =>
-        logger.warn(s"handleError: reqN = ${reqN}, code = ${code}, msg = ${msg};" +
+        logger.warn(s"handleError: reqN = $reqN, code = $code, msg = $msg;" +
           s" no request found by number")
     }
   }

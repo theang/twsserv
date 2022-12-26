@@ -45,7 +45,7 @@ object TickerDataRepo extends TickerDataRepoIntf {
     }
   }
 
-  def write(ticker: TickerLoadType, data: List[HistoricalData]): Unit = {
+  def write(ticker: TickerLoadType, data: Seq[HistoricalData]): Unit = {
     createTableIfNotExists(ticker)
     val tableQuery = TickerDataTable.getQuery(ticker)
     val listToInsert = data.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol) })

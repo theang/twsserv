@@ -7,7 +7,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives.{complete, get, path}
 import akka.http.scaladsl.server.RouteConcatenation
-import serv1.client.TWSClient
+import serv1.client.{MultiClient, TWSClient}
 import serv1.db.repo.impl.{JobRepo, TickerDataRepo}
 import serv1.job.{TickerJobActor, TickerJobService}
 import serv1.rest.loaddata.{CheckLoadJobStateActor, LoadData, LoadDataActor, LoadService}
@@ -28,7 +28,7 @@ object RestServer extends RouteConcatenation {
 
     implicit val system: ActorSystem[Nothing] = ctx.system
 
-    val tickerJobService = new TickerJobService(TWSClient, JobRepo, TickerDataRepo)
+    val tickerJobService = new TickerJobService(MultiClient, JobRepo, TickerDataRepo)
     val tickerActorRef = ctx.spawn(TickerJobActor(tickerJobService, JobRepo), "tickerJobActor")
     val loadService = new LoadService(tickerActorRef)
     val loadDataActorRef = ctx.spawn(LoadDataActor(loadService), "loadDataActor")
@@ -36,7 +36,7 @@ object RestServer extends RouteConcatenation {
     val routes = {
       path("hello") {
         get {
-          complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
+          complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "UP"))
         }
       }
     } ~ new LoadData(loadDataActorRef, checkJobActorRef).routes

@@ -10,17 +10,19 @@ import serv1.model.ticker.BarSizes
 import serv1.util.LocalDateTimeUtil
 
 @RunWith(classOf[JUnitRunner])
-class ClientSuite extends AnyFunSuite {
-  test("data client") {
+class MultiClientSuite extends AnyFunSuite {
+  test("Yahoo data client") {
     var monitor: Object = new Object
+    var hData: List[HistoricalData] = null
     var done: Boolean = false
     var error: Boolean = false
 
-    TWSClient.loadHistoricalData(LocalDateTimeUtil.toEpoch(TestData.from), LocalDateTimeUtil.toEpoch(TestData.to),
-      TestData.xomTicker, TestData.xomTickerExch, TestData.xomTickerType, BarSizeConverter.getBarSizeSeconds(BarSizes.HOUR), 2,
+    YahooClient.loadHistoricalData(LocalDateTimeUtil.toEpoch(TestData.from), LocalDateTimeUtil.toEpoch(TestData.to),
+      TestData.xomTicker, TestData.xomTickerExch, TestData.xomTickerType, BarSizeConverter.getBarSizeSeconds(BarSizes.DAY), 2,
       (data: Seq[HistoricalData], last: Boolean) => {
         monitor.synchronized {
           if (last) {
+            hData = data.toList
             done = true
             monitor.notify()
           }
@@ -36,5 +38,6 @@ class ClientSuite extends AnyFunSuite {
     }
     assert(done === true)
     assert(error === false)
+    assert(hData.size === 3)
   }
 }
