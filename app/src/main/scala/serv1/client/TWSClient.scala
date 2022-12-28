@@ -9,21 +9,33 @@ import serv1.util.LocalDateTimeUtil
 import slick.util.Logging
 
 import java.time.format.DateTimeFormatter
-import java.util.Map
 import java.util.concurrent.atomic.AtomicInteger
 import java.{lang, util}
 
 object TWSClient extends DataClient with EWrapper with Logging {
   var config: Config = ServConfig.config.getConfig("twsClient")
-  var signal = new EJavaSignal
+  var signal: EReaderSignal = new EJavaSignal
   var client: EClientSocket = new EClientSocket(this, signal)
-  var reader = new EReader(client, signal)
+
+  //noinspection ConvertNullInitializerToUnderscore
+  @volatile
+  var reader: EReader = null
+  val readerMonitor = new Object
   val readerThreadState = new AtomicInteger(1)
   var thread: Thread = new Thread {
     override def run(): Unit = {
       while (readerThreadState.get() == 1) {
         if (client.isConnected) {
           logger.debug("client is connected")
+          logger.debug("wait reader created")
+          //noinspection LoopVariableNotUpdated
+          while (reader == null) {
+            readerMonitor.synchronized {
+              if (reader == null) {
+                readerMonitor.wait()
+              }
+            }
+          }
           // it is possible we have messages
           reader.processMsgs()
           while (client.isConnected) {
@@ -95,7 +107,7 @@ object TWSClient extends DataClient with EWrapper with Logging {
       logger.debug("client is not connected")
       //if client not connected
       //clear sequence
-      sequence.set(0)
+      sequence.set(1)
       logger.debug("reset sequence")
 
       //call connect asynchronously
@@ -103,7 +115,12 @@ object TWSClient extends DataClient with EWrapper with Logging {
       client.eConnect(config.getString("host"),
         config.getString("port").toInt,
         config.getString("clientId").toInt)
-      reader = new EReader(client, signal)
+      logger.debug(s"Server version: ${client.serverVersion()}")
+      readerMonitor.synchronized {
+        reader = new EReader(client, signal)
+        reader.start()
+        readerMonitor.notify()
+      }
       readerThreadState.synchronized {
         readerThreadState.notify()
       }
@@ -155,7 +172,9 @@ object TWSClient extends DataClient with EWrapper with Logging {
     val contract = ContractConverter.getContract(ticker, exchange, typ)
     val reqN = sequence.getAndIncrement()
     val queryTime = LocalDateTimeUtil.fromEpoch(to).format(formatter)
-    val duration = s"${(to - from) / 1000} S"
+    val durationSecond = to - from
+    logger.debug(s"Duration seconds : $durationSecond")
+    val duration = BarSizeConverter.getDuration(durationSecond.toInt, barSize)
     val barSizeStr = BarSizeConverter.getBarSize(barSize)
     val dateFormat = BarSizeConverter.getDateFormat(barSize)
     logger.debug(s"historicalData request: $reqN: $contract, $queryTime, $duration, $barSizeStr")
@@ -163,36 +182,47 @@ object TWSClient extends DataClient with EWrapper with Logging {
     client.reqHistoricalData(reqN, contract, queryTime, duration, barSizeStr, "TRADES", 1, dateFormat, false, null)
   }
 
-  override def tickPrice(i: Int, i1: Int, v: Double, tickAttrib: TickAttrib): Unit = ???
+  override def tickPrice(i: Int, i1: Int, v: Double, tickAttrib: TickAttrib): Unit =
+    logger.debug("tickPrice response")
 
-  override def tickSize(i: Int, i1: Int, i2: Int): Unit = ???
+  override def tickSize(i: Int, i1: Int, i2: Int): Unit =
+    logger.debug("tickSize response")
 
-  override def tickOptionComputation(i: Int, i1: Int, i2: Int, v: Double, v1: Double, v2: Double, v3: Double, v4: Double, v5: Double, v6: Double, v7: Double): Unit = ???
+  override def tickOptionComputation(i: Int, i1: Int, i2: Int, v: Double, v1: Double, v2: Double, v3: Double, v4: Double, v5: Double, v6: Double, v7: Double): Unit =
+    logger.debug("tickOptionComputation response")
 
-  override def tickGeneric(i: Int, i1: Int, v: Double): Unit = ???
+  override def tickGeneric(i: Int, i1: Int, v: Double): Unit =
+    logger.debug("tickGeneric response")
 
-  override def tickString(i: Int, i1: Int, s: String): Unit = ???
+  override def tickString(i: Int, i1: Int, s: String): Unit =
+    logger.debug("tickString response")
 
-  override def tickEFP(i: Int, i1: Int, v: Double, s: String, v1: Double, i2: Int, s1: String, v2: Double, v3: Double): Unit = ???
+  override def tickEFP(i: Int, i1: Int, v: Double, s: String, v1: Double, i2: Int, s1: String, v2: Double, v3: Double): Unit =
+    logger.debug("tickEFP response")
 
-  override def orderStatus(i: Int, s: String, v: Double, v1: Double, v2: Double, i1: Int, i2: Int, v3: Double, i3: Int, s1: String, v4: Double): Unit = ???
+  override def orderStatus(i: Int, s: String, v: Double, v1: Double, v2: Double, i1: Int, i2: Int, v3: Double, i3: Int, s1: String, v4: Double): Unit =
+    logger.debug("orderStatus response")
 
-  override def openOrder(i: Int, contract: Contract, order: Order, orderState: OrderState): Unit = ???
+  override def openOrder(i: Int, contract: Contract, order: Order, orderState: OrderState): Unit =
+    logger.debug("openOrder response")
 
-  override def openOrderEnd(): Unit = ???
+  override def openOrderEnd(): Unit =
+    logger.debug("openOrderEnd response")
 
-  override def updateAccountValue(s: String, s1: String, s2: String, s3: String): Unit = ???
+  override def updateAccountValue(s: String, s1: String, s2: String, s3: String): Unit =
+    logger.debug("updateAccountValue response")
 
-  override def updatePortfolio(contract: Contract, v: Double, v1: Double, v2: Double, v3: Double, v4: Double, v5: Double, s: String): Unit = ???
+  override def updatePortfolio(contract: Contract, v: Double, v1: Double, v2: Double, v3: Double, v4: Double, v5: Double, s: String): Unit =
+    logger.debug("updatePortfolio response")
 
-  override def updateAccountTime(s: String): Unit = ???
+  override def updateAccountTime(s: String): Unit =
+    logger.debug("updateAccountTime response")
 
-  override def accountDownloadEnd(s: String): Unit = ???
+  override def accountDownloadEnd(s: String): Unit =
+    logger.debug("accountDownloadEnd response")
 
   override def nextValidId(i: Int): Unit = {
-    //wait here until allowed to set
-    //to synchronize with checkConnected method
-    logger.debug("nextValidId: $i")
+    logger.debug(s"nextValidId: $i")
     orderSequence.synchronized {
       logger.debug("setting in sync block")
       orderSequence.set(i)
@@ -201,25 +231,36 @@ object TWSClient extends DataClient with EWrapper with Logging {
     }
   }
 
-  override def contractDetails(i: Int, contractDetails: ContractDetails): Unit = ???
+  override def contractDetails(i: Int, contractDetails: ContractDetails): Unit =
+    logger.debug("contractDetails response")
 
-  override def bondContractDetails(i: Int, contractDetails: ContractDetails): Unit = ???
+  override def bondContractDetails(i: Int, contractDetails: ContractDetails): Unit =
+    logger.debug("bondContractDetails response")
 
-  override def contractDetailsEnd(i: Int): Unit = ???
+  override def contractDetailsEnd(i: Int): Unit =
+    logger.debug("contractDetailsEnd response")
 
-  override def execDetails(i: Int, contract: Contract, execution: Execution): Unit = ???
+  override def execDetails(i: Int, contract: Contract, execution: Execution): Unit =
+    logger.debug("execDetails response")
 
-  override def execDetailsEnd(i: Int): Unit = ???
+  override def execDetailsEnd(i: Int): Unit =
+    logger.debug("execDetailsEnd response")
 
-  override def updateMktDepth(i: Int, i1: Int, i2: Int, i3: Int, v: Double, i4: Int): Unit = ???
+  override def updateMktDepth(i: Int, i1: Int, i2: Int, i3: Int, v: Double, i4: Int): Unit =
+    logger.debug("updateMktDepth response")
 
-  override def updateMktDepthL2(i: Int, i1: Int, s: String, i2: Int, i3: Int, v: Double, i4: Int, b: Boolean): Unit = ???
+  override def updateMktDepthL2(i: Int, i1: Int, s: String, i2: Int, i3: Int, v: Double, i4: Int, b: Boolean): Unit =
+    logger.debug("updateMktDepthL2 response")
 
-  override def updateNewsBulletin(i: Int, i1: Int, s: String, s1: String): Unit = ???
+  override def updateNewsBulletin(i: Int, i1: Int, s: String, s1: String): Unit =
+    logger.debug("updateNewsBulletin response")
 
-  override def managedAccounts(s: String): Unit = ???
+  override def managedAccounts(s: String): Unit = {
+    logger.debug(s"Managed accounts: $s")
+  }
 
-  override def receiveFA(i: Int, s: String): Unit = ???
+  override def receiveFA(i: Int, s: String): Unit =
+    logger.debug("receiveFA response")
 
   override def historicalData(i: Int, bar: Bar): Unit = {
     logger.debug(s"historical data: $i")
@@ -232,45 +273,65 @@ object TWSClient extends DataClient with EWrapper with Logging {
   }
 
 
-  override def scannerParameters(s: String): Unit = ???
+  override def scannerParameters(s: String): Unit =
+    logger.debug("scannerParameters response")
 
-  override def scannerData(i: Int, i1: Int, contractDetails: ContractDetails, s: String, s1: String, s2: String, s3: String): Unit = ???
+  override def scannerData(i: Int, i1: Int, contractDetails: ContractDetails, s: String, s1: String, s2: String, s3: String): Unit =
+    logger.debug("scannerData response")
 
-  override def scannerDataEnd(i: Int): Unit = ???
+  override def scannerDataEnd(i: Int): Unit =
+    logger.debug("scannerDataEnd response")
 
-  override def realtimeBar(i: Int, l: Long, v: Double, v1: Double, v2: Double, v3: Double, l1: Long, v4: Double, i1: Int): Unit = ???
+  override def realtimeBar(i: Int, l: Long, v: Double, v1: Double, v2: Double, v3: Double, l1: Long, v4: Double, i1: Int): Unit =
+    logger.debug("realtimeBar response")
 
-  override def currentTime(l: Long): Unit = ???
+  override def currentTime(l: Long): Unit =
+    logger.debug("currentTime response")
 
-  override def fundamentalData(i: Int, s: String): Unit = ???
+  override def fundamentalData(i: Int, s: String): Unit =
+    logger.debug("fundamentalData response")
 
-  override def deltaNeutralValidation(i: Int, deltaNeutralContract: DeltaNeutralContract): Unit = ???
+  override def deltaNeutralValidation(i: Int, deltaNeutralContract: DeltaNeutralContract): Unit =
+    logger.debug("deltaNeutralValidation response")
 
-  override def tickSnapshotEnd(i: Int): Unit = ???
+  override def tickSnapshotEnd(i: Int): Unit =
+    logger.debug("tickSnapshotEnd response")
 
-  override def marketDataType(i: Int, i1: Int): Unit = ???
+  override def marketDataType(i: Int, i1: Int): Unit =
+    logger.debug("marketDataType response")
 
-  override def commissionReport(commissionReport: CommissionReport): Unit = ???
+  override def commissionReport(commissionReport: CommissionReport): Unit =
+    logger.debug("commissionReport response")
 
-  override def position(s: String, contract: Contract, v: Double, v1: Double): Unit = ???
+  override def position(s: String, contract: Contract, v: Double, v1: Double): Unit =
+    logger.debug("position response")
 
-  override def positionEnd(): Unit = ???
+  override def positionEnd(): Unit =
+    logger.debug("positionEnd response")
 
-  override def accountSummary(i: Int, s: String, s1: String, s2: String, s3: String): Unit = ???
+  override def accountSummary(i: Int, s: String, s1: String, s2: String, s3: String): Unit =
+    logger.debug("accountSummary response")
 
-  override def accountSummaryEnd(i: Int): Unit = ???
+  override def accountSummaryEnd(i: Int): Unit =
+    logger.debug("accountSummaryEnd response")
 
-  override def verifyMessageAPI(s: String): Unit = ???
+  override def verifyMessageAPI(s: String): Unit =
+    logger.debug("verifyMessageAPI response")
 
-  override def verifyCompleted(b: Boolean, s: String): Unit = ???
+  override def verifyCompleted(b: Boolean, s: String): Unit =
+    logger.debug("verifyCompleted response")
 
-  override def verifyAndAuthMessageAPI(s: String, s1: String): Unit = ???
+  override def verifyAndAuthMessageAPI(s: String, s1: String): Unit =
+    logger.debug("verifyAndAuthMessageAPI response")
 
-  override def verifyAndAuthCompleted(b: Boolean, s: String): Unit = ???
+  override def verifyAndAuthCompleted(b: Boolean, s: String): Unit =
+    logger.debug("verifyAndAuthCompleted response")
 
-  override def displayGroupList(i: Int, s: String): Unit = ???
+  override def displayGroupList(i: Int, s: String): Unit =
+    logger.debug("displayGroupList response")
 
-  override def displayGroupUpdated(i: Int, s: String): Unit = ???
+  override def displayGroupUpdated(i: Int, s: String): Unit =
+    logger.debug("displayGroupUpdated response")
 
   override def error(e: Exception): Unit = {
     logger.error("TWSClient: Exception in client", e)
@@ -285,7 +346,8 @@ object TWSClient extends DataClient with EWrapper with Logging {
     ClientOperationHandlers.handleError(i, i1, s)
   }
 
-  override def connectionClosed(): Unit = ???
+  override def connectionClosed(): Unit =
+    logger.debug("connectionClosed response")
 
   override def connectAck(): Unit = {
     readerThreadState.synchronized {
@@ -294,73 +356,108 @@ object TWSClient extends DataClient with EWrapper with Logging {
     }
   }
 
-  override def positionMulti(i: Int, s: String, s1: String, contract: Contract, v: Double, v1: Double): Unit = ???
+  override def positionMulti(i: Int, s: String, s1: String, contract: Contract, v: Double, v1: Double): Unit =
+    logger.debug("positionMulti response")
 
-  override def positionMultiEnd(i: Int): Unit = ???
+  override def positionMultiEnd(i: Int): Unit =
+    logger.debug("positionMultiEnd response")
 
-  override def accountUpdateMulti(i: Int, s: String, s1: String, s2: String, s3: String, s4: String): Unit = ???
+  override def accountUpdateMulti(i: Int, s: String, s1: String, s2: String, s3: String, s4: String): Unit =
+    logger.debug("accountUpdateMulti response")
 
-  override def accountUpdateMultiEnd(i: Int): Unit = ???
+  override def accountUpdateMultiEnd(i: Int): Unit =
+    logger.debug("accountUpdateMultiEnd response")
 
-  override def securityDefinitionOptionalParameter(i: Int, s: String, i1: Int, s1: String, s2: String, set: util.Set[String], set1: util.Set[lang.Double]): Unit = ???
+  override def securityDefinitionOptionalParameter(i: Int, s: String, i1: Int, s1: String, s2: String, set: util.Set[String], set1: util.Set[lang.Double]): Unit =
+    logger.debug("securityDefinitionOptionalParameter response")
 
-  override def securityDefinitionOptionalParameterEnd(i: Int): Unit = ???
+  override def securityDefinitionOptionalParameterEnd(i: Int): Unit =
+    logger.debug("securityDefinitionOptionalParameterEnd response")
 
-  override def softDollarTiers(i: Int, softDollarTiers: Array[SoftDollarTier]): Unit = ???
+  override def softDollarTiers(i: Int, softDollarTiers: Array[SoftDollarTier]): Unit =
+    logger.debug("softDollarTiers response")
 
-  override def familyCodes(familyCodes: Array[FamilyCode]): Unit = ???
+  override def familyCodes(familyCodes: Array[FamilyCode]): Unit =
+    logger.debug("familyCodes response")
 
-  override def symbolSamples(i: Int, contractDescriptions: Array[ContractDescription]): Unit = ???
+  override def symbolSamples(i: Int, contractDescriptions: Array[ContractDescription]): Unit =
+    logger.debug("symbolSamples response")
 
-  override def mktDepthExchanges(depthMktDataDescriptions: Array[DepthMktDataDescription]): Unit = ???
+  override def mktDepthExchanges(depthMktDataDescriptions: Array[DepthMktDataDescription]): Unit =
+    logger.debug("mktDepthExchanges response")
 
-  override def tickNews(i: Int, l: Long, s: String, s1: String, s2: String, s3: String): Unit = ???
+  override def tickNews(i: Int, l: Long, s: String, s1: String, s2: String, s3: String): Unit =
+    logger.debug("tickNews response")
 
-  override def smartComponents(i: Int, map: util.Map[Integer, util.Map.Entry[String, Character]]): Unit = ???
+  override def smartComponents(i: Int, map: util.Map[Integer, util.Map.Entry[String, Character]]): Unit =
+    logger.debug("smartComponents response")
 
-  override def tickReqParams(i: Int, v: Double, s: String, i1: Int): Unit = ???
+  override def tickReqParams(i: Int, v: Double, s: String, i1: Int): Unit =
+    logger.debug("tickReqParams response")
 
-  override def newsProviders(newsProviders: Array[NewsProvider]): Unit = ???
+  override def newsProviders(newsProviders: Array[NewsProvider]): Unit =
+    logger.debug("newsProviders response")
 
-  override def newsArticle(i: Int, i1: Int, s: String): Unit = ???
+  override def newsArticle(i: Int, i1: Int, s: String): Unit =
+    logger.debug("newsArticle response")
 
-  override def historicalNews(i: Int, s: String, s1: String, s2: String, s3: String): Unit = ???
+  override def historicalNews(i: Int, s: String, s1: String, s2: String, s3: String): Unit =
+    logger.debug("historicalNews response")
 
-  override def historicalNewsEnd(i: Int, b: Boolean): Unit = ???
+  override def historicalNewsEnd(i: Int, b: Boolean): Unit =
+    logger.debug("historicalNewsEnd response")
 
-  override def headTimestamp(i: Int, s: String): Unit = ???
+  override def headTimestamp(i: Int, s: String): Unit =
+    logger.debug("headTimestamp response")
 
-  override def histogramData(i: Int, list: util.List[HistogramEntry]): Unit = ???
+  override def histogramData(i: Int, list: util.List[HistogramEntry]): Unit =
+    logger.debug("histogramData response")
 
-  override def historicalDataUpdate(i: Int, bar: Bar): Unit = ???
+  override def historicalDataUpdate(i: Int, bar: Bar): Unit =
+    logger.debug("historicalDataUpdate response")
 
-  override def rerouteMktDataReq(i: Int, i1: Int, s: String): Unit = ???
+  override def rerouteMktDataReq(i: Int, i1: Int, s: String): Unit =
+    logger.debug("rerouteMktDataReq response")
 
-  override def rerouteMktDepthReq(i: Int, i1: Int, s: String): Unit = ???
+  override def rerouteMktDepthReq(i: Int, i1: Int, s: String): Unit =
+    logger.debug("rerouteMktDepthReq response")
 
-  override def marketRule(i: Int, priceIncrements: Array[PriceIncrement]): Unit = ???
+  override def marketRule(i: Int, priceIncrements: Array[PriceIncrement]): Unit =
+    logger.debug("marketRule response")
 
-  override def pnl(i: Int, v: Double, v1: Double, v2: Double): Unit = ???
+  override def pnl(i: Int, v: Double, v1: Double, v2: Double): Unit =
+    logger.debug("pnl response")
 
-  override def pnlSingle(i: Int, i1: Int, v: Double, v1: Double, v2: Double, v3: Double): Unit = ???
+  override def pnlSingle(i: Int, i1: Int, v: Double, v1: Double, v2: Double, v3: Double): Unit =
+    logger.debug("pnlSingle response")
 
-  override def historicalTicks(i: Int, list: util.List[HistoricalTick], b: Boolean): Unit = ???
+  override def historicalTicks(i: Int, list: util.List[HistoricalTick], b: Boolean): Unit =
+    logger.debug("historicalTicks response")
 
-  override def historicalTicksBidAsk(i: Int, list: util.List[HistoricalTickBidAsk], b: Boolean): Unit = ???
+  override def historicalTicksBidAsk(i: Int, list: util.List[HistoricalTickBidAsk], b: Boolean): Unit =
+    logger.debug("historicalTicksBidAsk response")
 
-  override def historicalTicksLast(i: Int, list: util.List[HistoricalTickLast], b: Boolean): Unit = ???
+  override def historicalTicksLast(i: Int, list: util.List[HistoricalTickLast], b: Boolean): Unit =
+    logger.debug("historicalTicksLast response")
 
-  override def tickByTickAllLast(i: Int, i1: Int, l: Long, v: Double, i2: Int, tickAttribLast: TickAttribLast, s: String, s1: String): Unit = ???
+  override def tickByTickAllLast(i: Int, i1: Int, l: Long, v: Double, i2: Int, tickAttribLast: TickAttribLast, s: String, s1: String): Unit =
+    logger.debug("tickByTickAllLast response")
 
-  override def tickByTickBidAsk(i: Int, l: Long, v: Double, v1: Double, i1: Int, i2: Int, tickAttribBidAsk: TickAttribBidAsk): Unit = ???
+  override def tickByTickBidAsk(i: Int, l: Long, v: Double, v1: Double, i1: Int, i2: Int, tickAttribBidAsk: TickAttribBidAsk): Unit =
+    logger.debug("tickByTickBidAsk response")
 
-  override def tickByTickMidPoint(i: Int, l: Long, v: Double): Unit = ???
+  override def tickByTickMidPoint(i: Int, l: Long, v: Double): Unit =
+    logger.debug("tickByTickMidPoint response")
 
-  override def orderBound(l: Long, i: Int, i1: Int): Unit = ???
+  override def orderBound(l: Long, i: Int, i1: Int): Unit =
+    logger.debug("orderBound response")
 
-  override def completedOrder(contract: Contract, order: Order, orderState: OrderState): Unit = ???
+  override def completedOrder(contract: Contract, order: Order, orderState: OrderState): Unit =
+    logger.debug("completedOrder response")
 
-  override def completedOrdersEnd(): Unit = ???
+  override def completedOrdersEnd(): Unit =
+    logger.debug("completedOrdersEnd response")
 
-  override def replaceFAEnd(i: Int, s: String): Unit = ???
+  override def replaceFAEnd(i: Int, s: String): Unit =
+    logger.debug("replaceFAEnd response")
 }
