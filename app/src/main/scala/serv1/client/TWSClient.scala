@@ -5,14 +5,14 @@ import com.typesafe.config.Config
 import serv1.client.converters.{BarSizeConverter, ContractConverter}
 import serv1.client.operations.ClientOperationHandlers
 import serv1.config.ServConfig
-import serv1.util.LocalDateTimeUtil
+import serv1.util.{LocalDateTimeUtil, PowerOperator}
 import slick.util.Logging
 
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicInteger
 import java.{lang, util}
 
-object TWSClient extends DataClient with EWrapper with Logging {
+object TWSClient extends DataClient with EWrapper with Logging with PowerOperator  {
   var config: Config = ServConfig.config.getConfig("twsClient")
   var signal: EReaderSignal = new EJavaSignal
   var client: EClientSocket = new EClientSocket(this, signal)
@@ -177,8 +177,8 @@ object TWSClient extends DataClient with EWrapper with Logging {
     val duration = BarSizeConverter.getDuration(durationSecond.toInt, barSize)
     val barSizeStr = BarSizeConverter.getBarSize(barSize)
     val dateFormat = BarSizeConverter.getDateFormat(barSize)
-    logger.debug(s"historicalData request: $reqN: $contract, $queryTime, $duration, $barSizeStr")
-    ClientOperationHandlers.addHistoricalDataHandler(reqN, prec, dateFormat, cont, error)
+    logger.warn(s"historicalData request: $reqN: $contract, $queryTime, $duration, $barSizeStr")
+    ClientOperationHandlers.addHistoricalDataHandler(reqN, 10 ** prec, dateFormat, cont, error)
     client.reqHistoricalData(reqN, contract, queryTime, duration, barSizeStr, "TRADES", 1, dateFormat, false, null)
   }
 
@@ -263,12 +263,12 @@ object TWSClient extends DataClient with EWrapper with Logging {
     logger.debug("receiveFA response")
 
   override def historicalData(i: Int, bar: Bar): Unit = {
-    logger.debug(s"historical data: $i")
+    logger.debug(s"historical data: $i: ${bar.time()}")
     ClientOperationHandlers.handleHistoricalData(i, bar, last = false)
   }
 
   override def historicalDataEnd(i: Int, s: String, s1: String): Unit = {
-    logger.debug(s"Historical end: $i, $s, $s1")
+    logger.debug(s"historical data end: $i: $s $s1")
     ClientOperationHandlers.handleHistoricalData(i, null, last = true)
   }
 

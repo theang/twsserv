@@ -5,7 +5,7 @@ import serv1.client.converters.BarSizeConverter
 import serv1.client.operations.ClientOperationHandlers.{ErrorHandler, HistoricalDataOperationCallback}
 import serv1.config.ServConfig
 import serv1.model.HistoricalData
-import serv1.util.LocalDateTimeUtil
+import serv1.util.{LocalDateTimeUtil, PowerOperator}
 import slick.util.Logging
 
 import java.io.{BufferedReader, InputStream, InputStreamReader}
@@ -14,10 +14,7 @@ import java.time.{LocalDate, LocalDateTime}
 import java.time.format.{DateTimeFormatter, DateTimeParseException}
 import scala.math.pow
 
-object YahooClient extends DataClient with Logging {
-  implicit class PowerInt(i: Int) {
-    def **(b: Int): Int = pow(i, b).intValue
-  }
+object YahooClient extends DataClient with Logging with PowerOperator {
 
   val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
   var config: Config = ServConfig.config.getConfig("yahooClient")

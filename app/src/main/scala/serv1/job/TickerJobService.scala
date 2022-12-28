@@ -17,6 +17,7 @@ class TickerJobService (client: DataClient,
                         tickerDataRepo: TickerDataRepoIntf) extends Logging {
 
   def saveHistoricalData(jobId: UUID, ticker: TickerLoadType, data: Seq[HistoricalData], last: Boolean): Unit = {
+    logger.debug(s"writing ${data.size}")
     tickerDataRepo.write(ticker, data)
     if (last) {
       jobRepo.updateJob(jobId, ticker)

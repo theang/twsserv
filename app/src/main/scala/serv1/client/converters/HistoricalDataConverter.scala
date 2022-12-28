@@ -10,15 +10,15 @@ import java.time.format.DateTimeFormatter
 object HistoricalDataConverter {
   val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 
-  def fromPrecAndDateFormat(prec: Int, dateFormat: Int): Bar => HistoricalData = {
+  def fromPrecAndDateFormat(precMultiplier: Int, dateFormat: Int): Bar => HistoricalData = {
     (b: Bar) =>
       HistoricalData(
         dateFormat match {
           case 1 => LocalDateTimeUtil.toEpoch(LocalDate.parse(b.time(), formatter).atStartOfDay())
           case 2 => b.time.toLong
         },
-        (b.high() * prec).toLong, (b.low() * prec).toLong,
-        (b.open() * prec).toLong, (b.close() * prec).toLong,
+        (b.high() * precMultiplier).toLong, (b.low() * precMultiplier).toLong,
+        (b.open() * precMultiplier).toLong, (b.close() * precMultiplier).toLong,
         b.volume())
   }
 }

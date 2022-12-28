@@ -32,13 +32,13 @@ object ClientOperationHandlers extends Logging {
     errorHandlers.remove(handlerN)
   }
   def addHistoricalDataHandler(reqN: Int,
-                               prec: Int,
+                               precMultiplier: Int,
                                dateFormat: Int,
                                cont: HistoricalDataOperationCallback,
                                error: ErrorHandler): Unit = {
     val clOp = ClientOperation[ArrayBuffer[HistoricalData], HistoricalDataOperationCallback](cont, new ArrayBuffer[HistoricalData]())
     historicalData.addOne((reqN,
-      HistoricalDataOperation(HistoricalDataConverter.fromPrecAndDateFormat(prec, dateFormat),
+      HistoricalDataOperation(HistoricalDataConverter.fromPrecAndDateFormat(precMultiplier, dateFormat),
         clOp)))
     errorHandlers.addOne((reqN, error))
   }
@@ -51,8 +51,9 @@ object ClientOperationHandlers extends Logging {
             co.clOp.data.addOne(co.barConv(bar))
           }
           if ((co.clOp.data.size >= LOAD_CHUNK_SIZE) || last) {
+            val list = co.clOp.data.toList
             Future {
-              co.clOp.cont(co.clOp.data.toList, last)
+              co.clOp.cont(list, last)
             }
             co.clOp.data.clear()
           }
