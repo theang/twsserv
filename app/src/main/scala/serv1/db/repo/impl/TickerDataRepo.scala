@@ -4,19 +4,23 @@ import serv1.db.DB
 import serv1.db.DB.db
 import serv1.db.repo.intf.TickerDataRepoIntf
 import serv1.db.schema.{TickerData, TickerDataTable, TickerDataTableGen, TickerDataTableNameUtil}
+import serv1.exception.DatabaseException
 import serv1.model.HistoricalData
 import serv1.model.ticker.TickerLoadType
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.meta.MTable
+import slick.util.Logging
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.concurrent
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration, _}
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
+import scala.util.{Failure, Success}
 
-object TickerDataRepo extends TickerDataRepoIntf {
+object TickerDataRepo extends TickerDataRepoIntf with Logging {
+  val timeout: FiniteDuration = 5.second
   private val createdTables: concurrent.Map[TickerLoadType, Boolean] =
     new ConcurrentHashMap[TickerLoadType, Boolean]().asScala
 
@@ -47,9 +51,30 @@ object TickerDataRepo extends TickerDataRepoIntf {
 
   def write(ticker: TickerLoadType, data: Seq[HistoricalData]): Unit = {
     createTableIfNotExists(ticker)
+
+    val tickerDataTable = new TickerDataTableGen(ticker)
+    val tableQueryRead = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.time inSet data.map(_.timestamp)).map(_.time)
+    val timesAlreadyInTable: Set[Long] = Await.result(DB.db.run(tableQueryRead.result), timeout).toSet
     val tableQuery = TickerDataTable.getQuery(ticker)
-    val listToInsert = data.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol) })
-    Await.result(DB.db.run(DBIO.seq(tableQuery ++= listToInsert)), Duration.Inf)
+    val listToInsert = data.filter { hd =>
+      !timesAlreadyInTable.contains(hd.timestamp)
+    }.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol) })
+    val action = tableQuery ++= listToInsert
+    Await.result(DB.db.run(action.asTry), timeout) match {
+      case Success(Some(insertedRows)) =>
+        if (listToInsert.size != insertedRows) {
+          val msg = s"Insert failed: (toInsert) ${listToInsert.size} != (inserted) $insertedRows"
+          logger.error(msg)
+          throw new DatabaseException(message = msg)
+        }
+      case Success(None) =>
+        val msg = s"Insert returned None"
+        logger.error(msg)
+        throw new DatabaseException(message = msg)
+      case Failure(ex) =>
+        logger.error(s"Insert has exception", ex)
+        throw new DatabaseException(cause = ex)
+    }
   }
 
   def read(ticker: TickerLoadType): Seq[HistoricalData] = {

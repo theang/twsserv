@@ -6,11 +6,12 @@ import org.scalatestplus.junit.JUnitRunner
 import serv1.db.TestData._
 import serv1.db.repo.impl.{JobRepo, TickerDataRepo, TickerTypeRepo}
 import serv1.model.job.JobStatuses
+import serv1.model.ticker.TickerError
 import serv1.util.LocalDateTimeUtil
 
 @RunWith(classOf[JUnitRunner])
 class RepoSuite extends AnyFunSuite {
-  test("JobRepo tests") {
+  test("JobRepo test, create job, update job, check job is complete") {
     assert(JobRepo.getTickerJobs(null).size === 0)
     val id = JobRepo.createTickerJob(testTickers, from, to)
     assert(JobRepo.getTickerJobs(id).size === 1)
@@ -43,7 +44,24 @@ class RepoSuite extends AnyFunSuite {
     JobRepo.removeJob(id)
   }
 
-  test("ticker repo tests") {
+  test("JobRepo error test, create job, update with error, test result") {
+    assert(JobRepo.getTickerJobs(null).size === 0)
+    val id = JobRepo.createTickerJob(testTickers, from, to)
+    JobRepo.updateJob(id, testTicker2, Some("test"))
+    (() => {
+      val job = JobRepo.getTickerJobs(id).head
+      assert {
+        job.status === JobStatuses.IN_PROGRESS
+        job.loadedTickers.isEmpty === true
+        job.errors === List(TickerError(testTicker2, "test"))
+        job.tickers === List(testTicker)
+      }
+    })()
+    JobRepo.removeJob(id)
+  }
+
+  test("Ticker type repo") {
+    TickerTypeRepo.truncate()
     TickerTypeRepo.addTickerType(testTicker)
     val tickers = TickerTypeRepo.queryTickers()
     assert(tickers === List(testTicker))
@@ -52,7 +70,7 @@ class RepoSuite extends AnyFunSuite {
     assert(tickersEmpty === List())
   }
 
-  test("ticker data repo tests") {
+  test("Ticker data repo tests") {
     TickerDataRepo.truncate(testTicker)
     TickerDataRepo.write(testTicker, List(testHistoricalData))
     TickerDataRepo.write(testTicker, List(testHistoricalData1))

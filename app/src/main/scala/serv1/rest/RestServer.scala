@@ -1,21 +1,25 @@
 package serv1.rest
 
-import akka.actor.typed.{ActorSystem, Behavior, PostStop}
 import akka.actor.typed.scaladsl.Behaviors
-import akka.http.scaladsl.Http.ServerBinding
+import akka.actor.typed.{ActorSystem, Behavior, DispatcherSelector, PostStop}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives.{complete, get, path}
 import akka.http.scaladsl.server.RouteConcatenation
-import serv1.client.{MultiClient, TWSClient}
+import serv1.Configuration
+import serv1.client.MultiClient
+import serv1.db.TickerDataActor
 import serv1.db.repo.impl.{JobRepo, TickerDataRepo}
 import serv1.job.{TickerJobActor, TickerJobService}
 import serv1.rest.loaddata.{CheckLoadJobStateActor, LoadData, LoadDataActor, LoadService}
 
-import scala.util.{Failure, Success}
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 object RestServer extends RouteConcatenation {
+  val databaseDispatcherSelector: DispatcherSelector = DispatcherSelector.fromConfig(Configuration.DATABASE_BLOCKING_DISPATCHER_NAME)
+
   sealed trait Message
 
   private final case class StartFailed(cause: Throwable) extends Message
@@ -27,8 +31,8 @@ object RestServer extends RouteConcatenation {
   def apply(host: String, port: Int): Behavior[Message] = Behaviors.setup { ctx =>
 
     implicit val system: ActorSystem[Nothing] = ctx.system
-
-    val tickerJobService = new TickerJobService(MultiClient, JobRepo, TickerDataRepo)
+    val tickerDataActor = ctx.spawn(TickerDataActor(TickerDataRepo), name = "tickerDataActor", databaseDispatcherSelector)
+    val tickerJobService = new TickerJobService(MultiClient, JobRepo, tickerDataActor)
     val tickerActorRef = ctx.spawn(TickerJobActor(tickerJobService, JobRepo), "tickerJobActor")
     val loadService = new LoadService(tickerActorRef)
     val loadDataActorRef = ctx.spawn(LoadDataActor(loadService), "loadDataActor")

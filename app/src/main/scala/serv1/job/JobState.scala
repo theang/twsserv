@@ -1,14 +1,14 @@
 package serv1.job
 
-import akka.http.scaladsl.model.DateTime
 import serv1.model.job.JobStatuses.JobStatus
-import serv1.model.ticker.{TickerLoadType, TickerType}
+import serv1.model.ticker.{TickerError, TickerLoadType}
 
 import java.time.LocalDateTime
 
 sealed trait JobState
-case class TickerJobState(val status:JobStatus,
-                          val tickers:List[TickerLoadType],
-                          val loadedTickers:List[TickerLoadType],
-                          val from:LocalDateTime,
-                          val to:LocalDateTime) extends JobState
+case class TickerJobState(status:JobStatus,
+                          tickers:List[TickerLoadType],
+                          loadedTickers:List[TickerLoadType],
+                          errors:List[TickerError],
+                          from:LocalDateTime,
+                          to:LocalDateTime) extends JobState

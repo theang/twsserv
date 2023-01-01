@@ -25,7 +25,7 @@ class DBSuite extends AnyFunSuite with JsonFormats {
     DB.createTables()
     val job = Job(TestID,
       TickerJobState(JobStatuses.IN_PROGRESS,
-        tickers = testTickers, List.empty, from, to).toJson.prettyPrint
+        tickers = testTickers, List.empty, List.empty, from, to).toJson.prettyPrint
     )
     DB.db.run(DBIO.seq(JobTable.query += job))
 

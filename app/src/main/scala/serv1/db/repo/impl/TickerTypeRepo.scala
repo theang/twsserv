@@ -32,4 +32,9 @@ object TickerTypeRepo {
     val tableQuery = TickerTypeTable.query
     Await.result(DB.db.run(tableQuery.filter(TickerTypeTable.findTicker(tt)).delete), Duration.Inf)
   }
+
+  def truncate(): Unit = {
+    val tableQuery = TickerTypeTable.query
+    Await.result(DB.db.run(tableQuery.delete), Duration.Inf)
+  }
 }

@@ -3,15 +3,15 @@ package serv1.rest
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.DateTime
 import serv1.job.{JobState, TickerJobState}
-import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataResponse, LoadPeriod}
-import spray.json._
 import serv1.model.job.JobStatuses
 import serv1.model.ticker.BarSizes.BarSize
-import serv1.model.ticker.{BarSizes, TickerLoadType, TickerType}
+import serv1.model.ticker.{BarSizes, TickerError, TickerLoadType, TickerType}
+import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataResponse, LoadPeriod}
 import serv1.util.LocalDateTimeUtil
+import spray.json._
 
 import java.time.LocalDateTime
-import java.time.format.{DateTimeFormatter, DateTimeParseException}
+import java.time.format.DateTimeParseException
 import java.util.UUID
 
 trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
@@ -42,6 +42,7 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
   }
 
   implicit val tickerTypeFormat: RootJsonFormat[TickerType] = jsonFormat4(TickerType)
+
   implicit object BarSizeFormat extends RootJsonFormat[BarSize] {
     override def write(obj: BarSize): JsString = JsString(obj.toString)
 
@@ -55,7 +56,9 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
       case _ => throw DeserializationException(s"Need BarSize")
     }
   }
+
   implicit val tickerLoadTypeFormat: RootJsonFormat[TickerLoadType] = jsonFormat2(TickerLoadType)
+  implicit val tickerErrorFormat: RootJsonFormat[TickerError] = jsonFormat2(TickerError)
   implicit val loadPeriodFormat: RootJsonFormat[LoadPeriod] = jsonFormat2(LoadPeriod)
   implicit val loadDataRequestFormat: RootJsonFormat[LoadDataRequest] = jsonFormat2(LoadDataRequest)
 
@@ -88,17 +91,19 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
     override def write(obj: TickerJobState): JsObject = JsObject(
       "status" -> obj.status.toJson,
       "tickers" -> obj.tickers.toJson,
+      "errors" -> obj.errors.toJson,
       "loadedTickers" -> obj.loadedTickers.toJson,
       "from" -> obj.from.toJson,
       "to" -> obj.to.toJson
     )
 
     override def read(json: JsValue): TickerJobState = {
-      json.asJsObject.getFields("status", "tickers", "loadedTickers", "from", "to") match {
-        case Seq(status, tickers, loadedTickers, from, to) =>
+      json.asJsObject.getFields("status", "tickers", "errors", "loadedTickers", "from", "to") match {
+        case Seq(status, tickers, errors, loadedTickers, from, to) =>
           TickerJobState(status.convertTo[JobStatuses.JobStatus],
             tickers.convertTo[List[TickerLoadType]],
             loadedTickers.convertTo[List[TickerLoadType]],
+            errors.convertTo[List[TickerError]],
             from.convertTo[LocalDateTime],
             to.convertTo[LocalDateTime]
           )

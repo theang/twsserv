@@ -5,7 +5,7 @@ import serv1.db.repo.intf.JobRepoIntf
 import serv1.db.schema.{Job, JobTable}
 import serv1.job.{JobState, TickerJobState}
 import serv1.model.job.JobStatuses
-import serv1.model.ticker.TickerLoadType
+import serv1.model.ticker.{TickerError, TickerLoadType}
 import serv1.rest.JsonFormats
 import slick.jdbc.PostgresProfile.api._
 import spray.json._
@@ -21,7 +21,7 @@ object JobRepo extends JsonFormats with JobRepoIntf {
     val id = UUID.randomUUID()
     Await.result(DB.db.run(DBIO.seq(JobTable.query += Job(id,
       TickerJobState(JobStatuses.IN_PROGRESS,
-        tickers = tickersToLoad, List.empty, from, to).asInstanceOf[JobState].toJson.compactPrint))), Duration.Inf)
+        tickers = tickersToLoad, List.empty, List.empty, from, to).asInstanceOf[JobState].toJson.prettyPrint))), Duration.Inf)
     id
   }
 
@@ -41,22 +41,31 @@ object JobRepo extends JsonFormats with JobRepoIntf {
     }.toList
   }
 
-  def updateTickerJobState(t: TickerJobState, ticker: TickerLoadType): TickerJobState = {
+  def updateTickerJobState(t: TickerJobState, ticker: TickerLoadType, error: Option[String]): TickerJobState = {
     val newTicker = t.tickers diff List(ticker)
-    val newLoadedTicker = t.loadedTickers ++ List(ticker)
+    val newLoadedTicker = if (error.isEmpty) {
+      t.loadedTickers ++ List(ticker)
+    } else t.loadedTickers
+    val newErrors = if (error.isDefined) {
+      t.errors ++ List(TickerError(ticker, error.get))
+    } else t.errors
     t.copy(status = if (newTicker.isEmpty) JobStatuses.FINISHED else JobStatuses.IN_PROGRESS,
       tickers = newTicker, loadedTickers = newLoadedTicker,
+      errors = newErrors,
       from = t.from, to = t.to)
   }
 
-  def updateJob(jobId: UUID, ticker: TickerLoadType): Unit = {
+  def updateJob(jobId: UUID, ticker: TickerLoadType): Unit =
+    updateJob(jobId, ticker, Option.empty)
+
+  def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String]): Unit = {
     val query = JobTable.query.filter(_.jobId === jobId)
     val action = query.result.headOption.flatMap {
       case Some(job) =>
         val st: JobState = job.state.parseJson.convertTo[JobState]
         st match {
           case t: TickerJobState =>
-            query.map(_.state).update(updateTickerJobState(t, ticker).asInstanceOf[JobState].toJson.compactPrint)
+            query.map(_.state).update(updateTickerJobState(t, ticker, error).asInstanceOf[JobState].toJson.prettyPrint)
           case default =>
             DBIO.failed(new Exception("Can update only Ticker Job"))
         }

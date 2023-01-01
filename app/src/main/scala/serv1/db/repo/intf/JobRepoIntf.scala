@@ -11,7 +11,9 @@ trait JobRepoIntf {
 
   def getTickerJobs(jobId: UUID): Seq[TickerJobState]
 
-  def updateTickerJobState(t: TickerJobState, ticker: TickerLoadType): TickerJobState
+  def updateTickerJobState(t: TickerJobState, ticker: TickerLoadType, error: Option[String]): TickerJobState
+
+  def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String]): Unit
 
   def updateJob(jobId: UUID, ticker: TickerLoadType): Unit
 
