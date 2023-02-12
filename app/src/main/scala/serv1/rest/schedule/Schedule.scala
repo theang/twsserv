@@ -9,9 +9,9 @@ import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.{Consumes, PATCH, POST, Path, Produces}
+import jakarta.ws.rs._
 import serv1.rest.JsonFormats
-import serv1.rest.schedule.ScheduleActor.{ChangeScheduleRequest, ChangeScheduleRequestRef, CreateScheduledTaskRequest, CreateScheduledTaskRequestRef, RenameTaskRequest, RenameTaskRequestRef, RequestMessage, ScheduledTaskResponse}
+import serv1.rest.schedule.ScheduleActor._
 
 import scala.concurrent.duration._
 

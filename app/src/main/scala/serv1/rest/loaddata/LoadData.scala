@@ -14,7 +14,6 @@ import serv1.job.TickerJobState
 import serv1.rest.JsonFormats
 import serv1.rest.loaddata.CheckLoadJobStateActor.CheckLoadJobRef
 import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataRequestRef, LoadDataResponse}
-import akka.http.scaladsl.server.RouteConcatenation
 
 import java.util.UUID
 import scala.concurrent.duration._
@@ -46,6 +45,7 @@ class LoadData(loadDataActor: ActorRef[LoadDataRequestRef], checkLoadJobState: A
         }
       }
     }
+
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))

@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicInteger
 import java.{lang, util}
 
-object TWSClient extends DataClient with EWrapper with Logging with PowerOperator  {
+object TWSClient extends DataClient with EWrapper with Logging with PowerOperator {
   var config: Config = ServConfig.config.getConfig("twsClient")
   var signal: EReaderSignal = new EJavaSignal
   var client: EClientSocket = new EClientSocket(this, signal)

@@ -5,7 +5,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
 import serv1.db.DB
 import serv1.db.TestData._
-import serv1.db.repo.impl.{JobRepo, ScheduledTaskRepo, TickerDataErrorRepo, TickerDataRepo, TickerTypeRepo}
+import serv1.db.repo.impl._
 import serv1.db.schema.{ScheduledTask, TickerDataErrors}
 import serv1.model.job.JobStatuses
 import serv1.model.ticker.TickerError
@@ -108,11 +108,13 @@ class RepoSuite extends AnyFunSuite {
 
     var tasks = ScheduledTaskRepo.getScheduledTasksBeforeNextRun(testScheduleRun)
     assert(tasks.size === 1)
+
     def assertTask(task: ScheduledTask, nextRun: Long, schedule: String, name: String) = {
       assert(task.nextRun === nextRun)
       assert(task.schedule === schedule)
       assert(task.name === name)
     }
+
     assertTask(tasks.head, testScheduleRun, testSchedule, testScheduleName)
 
     tasks = ScheduledTaskRepo.getScheduledTaskByName(testScheduleName)

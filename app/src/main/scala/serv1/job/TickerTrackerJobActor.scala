@@ -2,7 +2,6 @@ package serv1.job
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import serv1.job.TickerJobActor.Run
 
 object TickerTrackerJobActor {
 
@@ -16,9 +15,9 @@ object TickerTrackerJobActor {
 
   def apply(): Behavior[Message] = {
     Behaviors.withTimers {
-        timers =>
-          Behaviors.setup {
-            context =>
+      timers =>
+        Behaviors.setup {
+          context =>
 
             Behaviors.receiveMessage {
               case GetStatus =>

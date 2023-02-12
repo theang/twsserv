@@ -11,6 +11,8 @@ object JobTable {
 
 class JobTable(tag: Tag) extends Table[Job](tag, "JOB") {
   def jobId = column[UUID]("JOB_ID", O.PrimaryKey)
+
   def state = column[String]("STATE")
+
   def * = (jobId, state) <> (Job.tupled, Job.unapply)
 }

@@ -6,7 +6,7 @@ import serv1.model.ticker.{BarSizes, TickerLoadType, TickerType}
 import scala.util.matching.Regex
 
 object TickerDataTableNameUtil {
-  def formatTableName(tt: TickerLoadType) : String = s"TD_${tt.tickerType.exchange}_${tt.tickerType.typ}_${tt.tickerType.name}_${tt.barSize}"
+  def formatTableName(tt: TickerLoadType): String = s"TD_${tt.tickerType.exchange}_${tt.tickerType.typ}_${tt.tickerType.name}_${tt.barSize}"
 
   val tableNameRegex: Regex = "^TD_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)$".r
 

@@ -19,6 +19,7 @@ object ClientOperationHandlers extends Logging {
   type ErrorHandler = (Int, String) => Unit
 
   type HistoricalDataOperationCallback = (Seq[HistoricalData], Boolean) => Unit
+
   case class HistoricalDataOperation(barConv: Bar => HistoricalData,
                                      clOp: ClientOperation[ArrayBuffer[HistoricalData], HistoricalDataOperationCallback])
 
@@ -31,6 +32,7 @@ object ClientOperationHandlers extends Logging {
     historicalData.remove(handlerN)
     errorHandlers.remove(handlerN)
   }
+
   def addHistoricalDataHandler(reqN: Int,
                                precMultiplier: Int,
                                dateFormat: Int,

@@ -41,7 +41,7 @@ class DBSuite extends AnyFunSuite with JsonFormats {
   test("try creating ticker type record") {
     DB.createTables()
     val ticker = TickerTypeDB(0, "TEST", "EXC", "STK", BarSizes.MIN15, 2)
-    val findTicker = (e:TickerTypeTable) => e.name === "TEST" && e.exchange === "EXC" && e.typ === "STK" && e.barSize === BarSizes.MIN15
+    val findTicker = (e: TickerTypeTable) => e.name === "TEST" && e.exchange === "EXC" && e.typ === "STK" && e.barSize === BarSizes.MIN15
     Await.result(DB.db.run(TickerTypeTable.query.filter(findTicker).delete), Duration.Inf)
 
     // given
@@ -59,7 +59,7 @@ class DBSuite extends AnyFunSuite with JsonFormats {
     Await.result(DB.db.run(TickerTypeTable.query.delete), Duration.Inf)
   }
 
-  test ("try creating ticker data record") {
+  test("try creating ticker data record") {
     DB.createTables()
     val ticker = TickerTypeDB(0, "TEST", "EXC", "STK", BarSizes.MIN15, 2)
     val tickerType: TickerLoadType = ticker
@@ -67,12 +67,12 @@ class DBSuite extends AnyFunSuite with JsonFormats {
     val tickerDataTable = TickerDataTable.getQuery(tickerType)
     val clazz = new TickerDataTableGen(tickerType)
     val query = TableQuery[clazz.TickerDataTable]
-    Await.result(DB.db.run(query.filter(td=>td.time === 1000L).delete), Duration.Inf)
+    Await.result(DB.db.run(query.filter(td => td.time === 1000L).delete), Duration.Inf)
     val historicalData = HistoricalData(1000, 2000, 1000, 1500, 1600, 1000)
     Await.result(DB.db.run(tickerDataTable += historicalData), Duration.Inf)
-    val testTickerData = Await.result(DB.db.run(query.filter(td=>td.time === 1000L).result.head), Duration.Inf)
-    val testHistoricalData:HistoricalData = testTickerData
-    Await.result(DB.db.run(query.filter(td=>td.time === 1000L).delete), Duration.Inf)
+    val testTickerData = Await.result(DB.db.run(query.filter(td => td.time === 1000L).result.head), Duration.Inf)
+    val testHistoricalData: HistoricalData = testTickerData
+    Await.result(DB.db.run(query.filter(td => td.time === 1000L).delete), Duration.Inf)
     assert(historicalData == testHistoricalData)
   }
 }

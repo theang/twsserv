@@ -10,7 +10,7 @@ import scala.concurrent.duration.Duration
 object ScheduledTaskRepo {
   def addScheduledTask(name: String, schedule: String, nextRun: Long): Int = {
     val tableQuery = ScheduledTaskTable.query
-    val scheduledTaskId  = (tableQuery returning tableQuery.map(_.id)) += ScheduledTask(0, name, nextRun, schedule)
+    val scheduledTaskId = (tableQuery returning tableQuery.map(_.id)) += ScheduledTask(0, name, nextRun, schedule)
     Await.result(DB.db.run(scheduledTaskId), Duration.Inf)
   }
 

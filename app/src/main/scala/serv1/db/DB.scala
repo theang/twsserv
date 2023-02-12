@@ -1,6 +1,6 @@
 package serv1.db
 
-import serv1.db.schema.{JobTable, ScheduledTaskTable, TickerTypeTable, TickerDataErrorsTable, TickerTrackingTable}
+import serv1.db.schema._
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.meta.MTable
 

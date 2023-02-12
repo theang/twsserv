@@ -10,9 +10,8 @@ import slick.util.Logging
 
 import java.io.{BufferedReader, InputStream, InputStreamReader}
 import java.net.{HttpURLConnection, URL}
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDate
 import java.time.format.{DateTimeFormatter, DateTimeParseException}
-import scala.math.pow
 
 object YahooClient extends DataClient with Logging with PowerOperator {
 

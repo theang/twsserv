@@ -1,11 +1,11 @@
 package serv1.rest.schedule
 
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
 import serv1.db.repo.intf.ScheduledTaskRepoIntf
 import serv1.util.{CronUtil, LocalDateTimeUtil}
 
-import java.time.{LocalDateTime, ZoneId, ZoneOffset}
+import java.time.LocalDateTime
 
 object ScheduleActor {
 
@@ -24,6 +24,7 @@ object ScheduleActor {
   case class ChangeScheduleRequestRef(changeScheduleRequest: ChangeScheduleRequest, replyTo: ActorRef[ResponseMessage]) extends RequestMessage
 
   sealed trait ResponseMessage
+
   case class ScheduledTaskResponse(id: Int, name: String, schedule: String, nextRun: LocalDateTime) extends ResponseMessage
 
   def apply(scheduledTaskRepoIntf: ScheduledTaskRepoIntf): Behavior[RequestMessage] = {

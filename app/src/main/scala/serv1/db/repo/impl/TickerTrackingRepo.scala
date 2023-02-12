@@ -27,7 +27,7 @@ object TickerTrackingRepo extends TickerTrackingRepoIntf {
     Await.result(DB.db.run(DBIO.sequence(actions)), Duration.Inf).sum
   }
 
-  def truncate : Int = {
+  def truncate: Int = {
     Await.result(DB.db.run(TickerTrackingTable.query.delete), Duration.Inf)
   }
 }

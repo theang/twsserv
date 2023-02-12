@@ -10,7 +10,6 @@ import serv1.rest.JsonFormats
 
 import java.time.LocalDateTime
 import java.util.UUID
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class LoadService(tickerJobActorRef: ActorRef[TickerJobActor.Run])(implicit system: ActorSystem[_]) extends JsonFormats {

@@ -1,15 +1,19 @@
 package serv1.util
 
-import java.time.{LocalDate, LocalDateTime, Year, YearMonth, ZoneId, ZoneOffset}
 import java.time.format.DateTimeFormatter
+import java.time._
 
 object LocalDateTimeUtil {
   private val ISODateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME
 
   def parse(s: String): LocalDateTime = LocalDateTime.parse(s, ISODateTimeFormatter)
+
   def format(dt: LocalDateTime): String = dt.format(ISODateTimeFormatter)
+
   def fromEpoch(epoch: Long): LocalDateTime = LocalDateTime.ofEpochSecond(epoch, 0, ZoneOffset.UTC)
+
   def toEpoch(dt: LocalDateTime): Long = dt.toEpochSecond(ZoneOffset.UTC)
+
   def getYearDays(year: Int): Int = Year.of(year).length()
 
   /// Sunday = 0

@@ -6,9 +6,10 @@ import serv1.model.ticker.{TickerError, TickerLoadType}
 import java.time.LocalDateTime
 
 sealed trait JobState
-case class TickerJobState(status:JobStatus,
-                          tickers:List[TickerLoadType],
-                          loadedTickers:List[TickerLoadType],
-                          errors:List[TickerError],
-                          from:LocalDateTime,
-                          to:LocalDateTime) extends JobState
+
+case class TickerJobState(status: JobStatus,
+                          tickers: List[TickerLoadType],
+                          loadedTickers: List[TickerLoadType],
+                          errors: List[TickerError],
+                          from: LocalDateTime,
+                          to: LocalDateTime) extends JobState

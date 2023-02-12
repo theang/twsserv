@@ -1,4 +1,5 @@
 package serv1.client
+
 import com.typesafe.config.Config
 import serv1.client.operations.ClientOperationHandlers.{ErrorHandler, HistoricalDataOperationCallback}
 import serv1.config.ServConfig
