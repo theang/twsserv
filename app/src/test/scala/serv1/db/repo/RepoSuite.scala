@@ -3,8 +3,10 @@ package serv1.db.repo
 import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
+import serv1.db.DB
 import serv1.db.TestData._
-import serv1.db.repo.impl.{JobRepo, TickerDataRepo, TickerTypeRepo}
+import serv1.db.repo.impl.{JobRepo, ScheduledTaskRepo, TickerDataErrorRepo, TickerDataRepo, TickerTypeRepo}
+import serv1.db.schema.{ScheduledTask, TickerDataErrors}
 import serv1.model.job.JobStatuses
 import serv1.model.ticker.TickerError
 import serv1.util.LocalDateTimeUtil
@@ -83,5 +85,65 @@ class RepoSuite extends AnyFunSuite {
     assert(lastVal === List(testHistoricalData2))
     TickerDataRepo.truncate(testTicker)
     TickerTypeRepo.removeTickerType(testTicker)
+  }
+
+  test("Ticker data error repo tests") {
+    DB.createTables()
+    TickerDataErrorRepo.truncate
+    val testMessage = "test"
+    val newId = TickerDataErrorRepo.addError(testMessage)
+    val messages = TickerDataErrorRepo.queryMessages.toList
+    assert(messages === List(TickerDataErrors(newId, testMessage)))
+    val message = TickerDataErrorRepo.queryMessage(newId)
+    assert(message === TickerDataErrors(newId, testMessage))
+    TickerDataErrorRepo.deleteMessage(newId)
+    val noMessages = TickerDataErrorRepo.queryMessages.toList
+    assert(noMessages.isEmpty)
+  }
+
+  test("Scheduled Tasks Repo tests") {
+    DB.createTables()
+    ScheduledTaskRepo.truncate
+    ScheduledTaskRepo.addScheduledTask(testScheduleName, testSchedule, testScheduleRun)
+
+    var tasks = ScheduledTaskRepo.getScheduledTasksBeforeNextRun(testScheduleRun)
+    assert(tasks.size === 1)
+    def assertTask(task: ScheduledTask, nextRun: Long, schedule: String, name: String) = {
+      assert(task.nextRun === nextRun)
+      assert(task.schedule === schedule)
+      assert(task.name === name)
+    }
+    assertTask(tasks.head, testScheduleRun, testSchedule, testScheduleName)
+
+    tasks = ScheduledTaskRepo.getScheduledTaskByName(testScheduleName)
+    assert(tasks.size === 1)
+    assertTask(tasks.head, testScheduleRun, testSchedule, testScheduleName)
+
+    val id = tasks.head.id
+    tasks = ScheduledTaskRepo.getScheduledTaskById(id)
+    assert(tasks.size === 1)
+    assertTask(tasks.head, testScheduleRun, testSchedule, testScheduleName)
+
+    ScheduledTaskRepo.updateName(testScheduleName, testScheduleName1)
+    ScheduledTaskRepo.updateNextRun(testScheduleName1, testScheduleRun1)
+    ScheduledTaskRepo.updateSchedule(testScheduleName1, testSchedule1)
+    tasks = ScheduledTaskRepo.getScheduledTaskByName(testScheduleName1)
+
+    assert(tasks.size === 1)
+    assertTask(tasks.head, testScheduleRun1, testSchedule1, testScheduleName1)
+
+    tasks = ScheduledTaskRepo.getScheduledTasksBeforeNextRun(testScheduleRun)
+    assert(tasks.size === 0)
+
+    tasks = ScheduledTaskRepo.getScheduledTasksBeforeNextRun(testScheduleRun1)
+    assert(tasks.size === 1)
+    assertTask(tasks.head, testScheduleRun1, testSchedule1, testScheduleName1)
+
+    ScheduledTaskRepo.deleteScheduledTask(testScheduleName1)
+    tasks = ScheduledTaskRepo.getScheduledTaskByName(testScheduleName1)
+    assert(tasks.size === 0)
+  }
+
+  test("Ticker tracking repo tests") {
   }
 }

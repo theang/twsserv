@@ -7,6 +7,8 @@ import serv1.model.job.JobStatuses
 import serv1.model.ticker.BarSizes.BarSize
 import serv1.model.ticker.{BarSizes, TickerError, TickerLoadType, TickerType}
 import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataResponse, LoadPeriod}
+import serv1.rest.schedule.ScheduleActor.{ChangeScheduleRequest, CreateScheduledTaskRequest, RenameTaskRequest, ScheduledTaskResponse}
+import serv1.rest.ticker.TickerJobControlActor.{AddTickersTrackingRequest, RemoveTickersTrackingRequest, TickersTrackingResponse}
 import serv1.util.LocalDateTimeUtil
 import spray.json._
 
@@ -131,4 +133,13 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
       }
     }
   }
+
+  implicit val createScheduledTaskRequestFormat: RootJsonFormat[CreateScheduledTaskRequest] = jsonFormat2(CreateScheduledTaskRequest)
+  implicit val renameScheduledTaskRequestFormat: RootJsonFormat[RenameTaskRequest] = jsonFormat2(RenameTaskRequest)
+  implicit val changeScheduleOfScheduledTaskRequestFormat: RootJsonFormat[ChangeScheduleRequest] = jsonFormat2(ChangeScheduleRequest)
+  implicit val createScheduledTaskResponseFormat: RootJsonFormat[ScheduledTaskResponse] = jsonFormat4(ScheduledTaskResponse)
+
+  implicit val addTickersTrackingRequestFormat: RootJsonFormat[AddTickersTrackingRequest] = jsonFormat2(AddTickersTrackingRequest)
+  implicit val removeTickersTrackingRequestFormat: RootJsonFormat[RemoveTickersTrackingRequest] = jsonFormat2(RemoveTickersTrackingRequest)
+  implicit val tickersTrackingResponseFormat: RootJsonFormat[TickersTrackingResponse] = jsonFormat2(TickersTrackingResponse)
 }

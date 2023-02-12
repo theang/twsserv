@@ -60,6 +60,7 @@ class DBSuite extends AnyFunSuite with JsonFormats {
   }
 
   test ("try creating ticker data record") {
+    DB.createTables()
     val ticker = TickerTypeDB(0, "TEST", "EXC", "STK", BarSizes.MIN15, 2)
     val tickerType: TickerLoadType = ticker
     TickerDataRepo.createTableIfNotExists(tickerType)

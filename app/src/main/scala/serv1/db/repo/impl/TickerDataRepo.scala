@@ -98,6 +98,13 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
     tickerDataHD
   }
 
+  def latestDate(ticker: TickerLoadType): Option[Long] = {
+    createTableIfNotExists(ticker)
+    val tickerDataTable = new TickerDataTableGen(ticker)
+    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].map(_.time).max
+    Await.result(DB.db.run(tableQuery.result), Duration.Inf)
+  }
+
   def truncate(ticker: TickerLoadType): Unit = {
     createTableIfNotExists(ticker)
     val tableQuery = TickerDataTable.getQuery(ticker)
