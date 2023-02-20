@@ -10,9 +10,11 @@ import akka.http.scaladsl.server.RouteConcatenation
 import serv1.Configuration
 import serv1.client.MultiClient
 import serv1.db.TickerDataActor
-import serv1.db.repo.impl.{JobRepo, TickerDataRepo}
-import serv1.job.{TickerJobActor, TickerJobService}
+import serv1.db.repo.impl.{JobRepo, ScheduledTaskRepo, TickerDataRepo, TickerTrackingRepo, TickerTypeRepo}
+import serv1.job.{TickerJobActor, TickerJobService, TickerTrackerJobActor, TickerTrackerJobService}
 import serv1.rest.loaddata.{CheckLoadJobStateActor, LoadData, LoadDataActor, LoadService}
+import serv1.rest.schedule.{Schedule, ScheduleActor}
+import serv1.rest.ticker.{TickerJobControl, TickerJobControlActor}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -37,13 +39,21 @@ object RestServer extends RouteConcatenation {
     val loadService = new LoadService(tickerActorRef)
     val loadDataActorRef = ctx.spawn(LoadDataActor(loadService), "loadDataActor")
     val checkJobActorRef = ctx.spawn(CheckLoadJobStateActor(loadService), "checkJobStateActor")
+    val tickerJobControlActorRef = ctx.spawn(TickerJobControlActor(ScheduledTaskRepo, TickerTrackingRepo, TickerTypeRepo), "tickerJobControlActor")
+    val tickerTrackerJobService = new TickerTrackerJobService(loadService,
+      ScheduledTaskRepo, TickerTypeRepo, TickerTrackingRepo, TickerDataRepo)
+    val tickerTrackerJobActorRef = ctx.spawn(TickerTrackerJobActor(tickerTrackerJobService), "tickerTrackerJobActor")
+    val scheduleActorRef = ctx.spawn(ScheduleActor(ScheduledTaskRepo), "scheduleActor")
     val routes = {
       path("hello") {
         get {
           complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "UP"))
         }
       }
-    } ~ new LoadData(loadDataActorRef, checkJobActorRef).routes
+    } ~
+      new LoadData(loadDataActorRef, checkJobActorRef).routes ~
+      new Schedule(scheduleActorRef).routes ~
+      new TickerJobControl(tickerJobControlActorRef).routes
 
     val serverBinding: Future[Http.ServerBinding] =
       Http().newServerAt(host, port).bind(routes)

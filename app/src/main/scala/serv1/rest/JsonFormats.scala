@@ -8,7 +8,7 @@ import serv1.model.ticker.BarSizes.BarSize
 import serv1.model.ticker.{BarSizes, TickerError, TickerLoadType, TickerType}
 import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataResponse, LoadPeriod}
 import serv1.rest.schedule.ScheduleActor.{ChangeScheduleRequest, CreateScheduledTaskRequest, RenameTaskRequest, ScheduledTaskResponse}
-import serv1.rest.ticker.TickerJobControlActor.{AddTickersTrackingRequest, RemoveTickersTrackingRequest, TickersTrackingResponse}
+import serv1.rest.ticker.TickerJobControlActor.{AddTickersTrackingRequest, GetStatusRequest, RemoveTickersTrackingRequest, TickersTrackingResponse}
 import serv1.util.LocalDateTimeUtil
 import spray.json._
 
@@ -141,5 +141,6 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit val addTickersTrackingRequestFormat: RootJsonFormat[AddTickersTrackingRequest] = jsonFormat2(AddTickersTrackingRequest)
   implicit val removeTickersTrackingRequestFormat: RootJsonFormat[RemoveTickersTrackingRequest] = jsonFormat2(RemoveTickersTrackingRequest)
+  implicit val getStatusRequestFormat: RootJsonFormat[GetStatusRequest] = jsonFormat1(GetStatusRequest)
   implicit val tickersTrackingResponseFormat: RootJsonFormat[TickersTrackingResponse] = jsonFormat2(TickersTrackingResponse)
 }

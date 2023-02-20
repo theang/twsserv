@@ -2,18 +2,20 @@ package serv1.db
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
+import akka.event.Logging
 import com.typesafe.config.Config
 import serv1.config.ServConfig
 import serv1.db.repo.intf.TickerDataRepoIntf
 import serv1.exception.DatabaseException
 import serv1.model.HistoricalData
 import serv1.model.ticker.TickerLoadType
+import slick.util.Logging
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
 import scala.util.Random
 
-object TickerDataActor {
+object TickerDataActor extends Logging {
   val random: Random = Random
   val config: Config = ServConfig.config.getConfig("databaseOperation")
   val MAX_ATTEMPTS: Int = config.getInt("tickerRepoMaxAttempts")
@@ -52,12 +54,14 @@ object TickerDataActor {
       }
     } else {
       try {
+        logger.info(s"Blocking write $ticker")
         tickerDataRepo.write(ticker, historicalData)
         if (replyTo != null) {
           replyTo ! WriteSuccessful
         }
       } catch {
         case _: DatabaseException =>
+          logger.info(s"Blocking write unsuccessful $ticker starting timer")
           timers.startSingleTimer(timerKey, Write(attempt + 1, ticker, historicalData, replyTo), calculateRandomDelay())
       }
     }

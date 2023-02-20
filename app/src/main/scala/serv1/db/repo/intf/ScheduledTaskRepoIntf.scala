@@ -16,4 +16,6 @@ trait ScheduledTaskRepoIntf {
   def getScheduledTaskById(id: Int): Seq[ScheduledTask]
 
   def getScheduledTaskByName(name: String): Seq[ScheduledTask]
+
+  def getScheduledTasksBeforeNextRun(nextRun: Long): Seq[ScheduledTask]
 }

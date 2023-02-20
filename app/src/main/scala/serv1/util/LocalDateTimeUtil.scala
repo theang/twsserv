@@ -29,4 +29,6 @@ object LocalDateTimeUtil {
   def convertFromUTC(dateTime: LocalDateTime, zoneId: ZoneId): LocalDateTime = dateTime.atZone(ZoneOffset.UTC).withZoneSameInstant(zoneId).toLocalDateTime
 
   def convertToUTC(dateTime: LocalDateTime, zoneId: ZoneId): LocalDateTime = dateTime.atZone(zoneId).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime
+
+  def now(): LocalDateTime = LocalDateTime.now()
 }

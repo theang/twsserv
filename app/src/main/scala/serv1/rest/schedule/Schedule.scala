@@ -91,4 +91,8 @@ class Schedule(scheduleActor: ActorRef[RequestMessage])(implicit system: ActorSy
         }
       }
     }
+
+  def routes: Route = {
+    createScheduledTask ~ renameScheduledTask ~ changeScheduleOfScheduledTask
+  }
 }

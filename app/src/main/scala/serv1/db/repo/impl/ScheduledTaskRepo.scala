@@ -1,13 +1,14 @@
 package serv1.db.repo.impl
 
 import serv1.db.DB
+import serv1.db.repo.intf.ScheduledTaskRepoIntf
 import serv1.db.schema.{ScheduledTask, ScheduledTaskTable}
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-object ScheduledTaskRepo {
+object ScheduledTaskRepo extends ScheduledTaskRepoIntf {
   def addScheduledTask(name: String, schedule: String, nextRun: Long): Int = {
     val tableQuery = ScheduledTaskTable.query
     val scheduledTaskId = (tableQuery returning tableQuery.map(_.id)) += ScheduledTask(0, name, nextRun, schedule)

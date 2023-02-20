@@ -10,11 +10,15 @@ object TickerJobControlActor {
 
   case class RemoveTickersTrackingRequest(scheduleName: String, tickers: List[TickerLoadType])
 
+  case class GetStatusRequest(scheduleName: String)
+
   sealed trait RequestMessage
 
   case class AddTickersTrackingRequestRef(addTickersTrackingRequest: AddTickersTrackingRequest, replyTo: ActorRef[ResponseMessage]) extends RequestMessage
 
   case class RemoveTickersTrackingRequestRef(removeTickersTrackingRequest: RemoveTickersTrackingRequest, replyTo: ActorRef[ResponseMessage]) extends RequestMessage
+
+  case class GetStatusRequestRef(getStatusRequest: GetStatusRequest, replyTo: ActorRef[ResponseMessage]) extends RequestMessage
 
   sealed trait ResponseMessage
 
@@ -43,6 +47,13 @@ object TickerJobControlActor {
         val updatedTickers = tickerTypeRepoIntf.queryTickers(
           tickerTrackingRepoIntf.findTickerTracking(scheduleId))
         replyTo ! TickersTrackingResponse(scheduleName, updatedTickers.toList)
+        Behaviors.same
+      case GetStatusRequestRef(getStatusRequest, replyTo) =>
+        val scheduleName = getStatusRequest.scheduleName
+        val scheduleId = scheduledTaskRepoIntf.getScheduledTaskByName(scheduleName).head.id
+        val tickers = tickerTypeRepoIntf.queryTickers(
+          tickerTrackingRepoIntf.findTickerTracking(scheduleId))
+        replyTo ! TickersTrackingResponse(scheduleName, tickers.toList)
         Behaviors.same
     }
   }

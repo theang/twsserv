@@ -17,11 +17,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 object JobRepo extends JsonFormats with JobRepoIntf {
-  def createTickerJob(tickersToLoad: List[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID = {
+  def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID = {
     val id = UUID.randomUUID()
     Await.result(DB.db.run(DBIO.seq(JobTable.query += Job(id,
       TickerJobState(JobStatuses.IN_PROGRESS,
-        tickers = tickersToLoad, List.empty, List.empty, from, to).asInstanceOf[JobState].toJson.prettyPrint))), Duration.Inf)
+        tickers = tickersToLoad.toList, List.empty, List.empty, from, to).asInstanceOf[JobState].toJson.prettyPrint))), Duration.Inf)
     id
   }
 
