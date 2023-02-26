@@ -2,8 +2,7 @@ package serv1.rest.loaddata
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.http.scaladsl.model.DateTime
-import serv1.model.ticker.{TickerLoadType, TickerType}
+import serv1.model.ticker.TickerLoadType
 
 import java.time.LocalDateTime
 import java.util.UUID

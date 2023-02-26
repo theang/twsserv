@@ -20,6 +20,9 @@ repositories {
     flatDir {
         dirs("../libs")
     }
+    maven {
+        setUrl("https://oss.sonatype.org/content/groups/public/")
+    }
 }
 
 dependencies {
@@ -71,6 +74,7 @@ dependencies {
     implementation("com.typesafe.akka:akka-slf4j_${scalaVersion}:${akkaVersion}")
     implementation("ch.qos.logback:logback-classic:1.4.5")
 
+    implementation("org.snakeyaml:snakeyaml-engine:2.6-SNAPSHOT")
 
     implementation("", "TwsApi")
 }

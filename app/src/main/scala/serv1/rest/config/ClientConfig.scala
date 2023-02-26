@@ -1,18 +1,18 @@
 package serv1.rest.config
 
+import akka.http.scaladsl.server.{Directives, Route}
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
-import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import akka.http.scaladsl.server.{Directives, Route}
-import jakarta.ws.rs.{Consumes, GET, POST, Produces}
-import serv1.rest.JsonFormats
 import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.{Consumes, GET, Produces}
 import serv1.client.MultiClient
+import serv1.rest.JsonFormats
 import spray.json.RootJsonFormat
 
 class ClientConfig extends Directives with JsonFormats {
   case class Client(clientName: String)
+
   implicit val clientFormat: RootJsonFormat[Client] = jsonFormat1(Client)
 
   @GET
@@ -27,7 +27,9 @@ class ClientConfig extends Directives with JsonFormats {
   def loadData: Route =
     path("clientConfig") {
       get {
-        complete { Client(MultiClient.currentClient) }
+        complete {
+          Client(MultiClient.currentClient)
+        }
       }
     }
 }

@@ -10,9 +10,8 @@ import slick.util.Logging
 
 import java.io.{BufferedReader, InputStream, InputStreamReader}
 import java.net.{HttpURLConnection, URL}
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDate
 import java.time.format.{DateTimeFormatter, DateTimeParseException}
-import scala.math.pow
 
 object YahooClient extends DataClient with Logging with PowerOperator {
 
@@ -51,7 +50,7 @@ object YahooClient extends DataClient with Logging with PowerOperator {
             (low.toFloat * (10 ** prec)).toLong,
             (open.toFloat * (10 ** prec)).toLong,
             (close.toFloat * (10 ** prec)).toLong,
-            vol.toLong)
+            vol.toDouble)
         } catch {
           case exc: DateTimeParseException =>
             logger.warn(s"Could not parse date: $date")
@@ -88,7 +87,7 @@ object YahooClient extends DataClient with Logging with PowerOperator {
     connection.connect()
     if (connection.getResponseCode >= 400) {
       logger.debug(s"ResponseCode: ${connection.getResponseCode}")
-      error(connection.getResponseCode, "Error when loading historical data")
+      error(connection.getResponseCode, "Error when loading historical data", "")
     } else {
       logger.debug(s"reading Historical Data")
       cont(readHistoricalDataFromStream(connection.getInputStream, prec), true)

@@ -11,4 +11,6 @@ trait TickerDataRepoIntf {
   def readRange(ticker: TickerLoadType, from: Long, to: Long): Seq[HistoricalData]
 
   def truncate(ticker: TickerLoadType): Unit
+
+  def latestDate(ticker: TickerLoadType): Option[Long]
 }

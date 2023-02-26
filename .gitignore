@@ -6,3 +6,11 @@ build
 
 secrets.yaml
 
+data/db/**
+!data/db/.gitkeep
+
+libs/**
+!libs/.gitkeep
+
+.idea
+

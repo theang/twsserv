@@ -4,7 +4,7 @@ import serv1.model.HistoricalData
 
 import scala.language.implicitConversions
 
-case class TickerData(id: Int, time: Long, open: Long, high: Long, low: Long, close: Long, vol: Long)
+case class TickerData(id: Int, time: Long, open: Long, high: Long, low: Long, close: Long, vol: Double)
 
 object TickerData {
   implicit def historicalDataToTickerData(historicalData: HistoricalData): TickerData = {

@@ -12,15 +12,17 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.{Consumes, POST, Path, Produces}
 import serv1.job.TickerJobState
 import serv1.rest.JsonFormats
+import serv1.rest.historical.HistoricalDataActor.{HistoricalDataRequest, HistoricalDataResponse}
 import serv1.rest.loaddata.CheckLoadJobStateActor.CheckLoadJobRef
 import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataRequestRef, LoadDataResponse}
-import akka.http.scaladsl.server.RouteConcatenation
 
 import java.util.UUID
 import scala.concurrent.duration._
 
 @Path("loadData")
-class LoadData(loadDataActor: ActorRef[LoadDataRequestRef], checkLoadJobState: ActorRef[CheckLoadJobRef])(implicit system: ActorSystem[_])
+class LoadData(loadDataActor: ActorRef[LoadDataRequestRef],
+               checkLoadJobState: ActorRef[CheckLoadJobRef],
+               historicalDataActor: ActorRef[HistoricalDataRequest])(implicit system: ActorSystem[_])
   extends Directives with JsonFormats {
   implicit val timeout: Timeout = 1000.seconds
 
@@ -46,6 +48,7 @@ class LoadData(loadDataActor: ActorRef[LoadDataRequestRef], checkLoadJobState: A
         }
       }
     }
+
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
@@ -69,7 +72,30 @@ class LoadData(loadDataActor: ActorRef[LoadDataRequestRef], checkLoadJobState: A
       }
     }
 
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Operation(summary = "Get candle data", description = "Get candle data",
+    requestBody = new RequestBody(required = true,
+      content = Array(new Content(schema = new Schema(implementation = classOf[LoadDataRequest])))),
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Check job state response",
+        content = Array(new Content(schema = new Schema(implementation = classOf[HistoricalDataResponse])))),
+      new ApiResponse(responseCode = "500", description = "Internal server error"))
+  )
+  def historicalData: Route =
+    path("historical") {
+      post {
+        entity(as[LoadDataRequest]) { request =>
+          val result = historicalDataActor.ask(replyTo => HistoricalDataRequest(request.tickers, request.period, replyTo))
+          complete {
+            result.mapTo[HistoricalDataResponse]
+          }
+        }
+      }
+    }
+
   def routes: Route = {
-    loadData ~ checkJobState
+    loadData ~ checkJobState ~ historicalData
   }
 }

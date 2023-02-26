@@ -3,10 +3,14 @@ package serv1.rest
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.DateTime
 import serv1.job.{JobState, TickerJobState}
+import serv1.model.HistoricalData
 import serv1.model.job.JobStatuses
 import serv1.model.ticker.BarSizes.BarSize
 import serv1.model.ticker.{BarSizes, TickerError, TickerLoadType, TickerType}
+import serv1.rest.historical.HistoricalDataActor.{HistoricalDataResponse, HistoricalDataValues}
 import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataResponse, LoadPeriod}
+import serv1.rest.schedule.ScheduleActor._
+import serv1.rest.ticker.TickerJobControlActor.{AddTickersTrackingRequest, GetStatusRequest, RemoveTickersTrackingRequest, TickersTrackingResponse}
 import serv1.util.LocalDateTimeUtil
 import spray.json._
 
@@ -61,6 +65,8 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val tickerErrorFormat: RootJsonFormat[TickerError] = jsonFormat2(TickerError)
   implicit val loadPeriodFormat: RootJsonFormat[LoadPeriod] = jsonFormat2(LoadPeriod)
   implicit val loadDataRequestFormat: RootJsonFormat[LoadDataRequest] = jsonFormat2(LoadDataRequest)
+
+  implicit val historicalDataFormat: RootJsonFormat[HistoricalData] = jsonFormat6(HistoricalData)
 
   implicit object UUIDJsonFormat extends RootJsonFormat[UUID] {
     override def write(obj: UUID): JsString = JsString(obj.toString)
@@ -131,4 +137,20 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
       }
     }
   }
+
+  implicit val runScheduledTaskRequest: RootJsonFormat[RunScheduledTaskRequest] = jsonFormat3(RunScheduledTaskRequest)
+  implicit val createScheduledTaskRequestFormat: RootJsonFormat[CreateScheduledTaskRequest] = jsonFormat2(CreateScheduledTaskRequest)
+  implicit val renameScheduledTaskRequestFormat: RootJsonFormat[RenameTaskRequest] = jsonFormat2(RenameTaskRequest)
+  implicit val changeScheduleOfScheduledTaskRequestFormat: RootJsonFormat[ChangeScheduleRequest] = jsonFormat2(ChangeScheduleRequest)
+  implicit val createScheduledTaskResponseFormat: RootJsonFormat[ScheduledTaskResponse] = jsonFormat4(ScheduledTaskResponse)
+
+  implicit val addTickersTrackingRequestFormat: RootJsonFormat[AddTickersTrackingRequest] = jsonFormat2(AddTickersTrackingRequest)
+  implicit val removeTickersTrackingRequestFormat: RootJsonFormat[RemoveTickersTrackingRequest] = jsonFormat2(RemoveTickersTrackingRequest)
+  implicit val getStatusRequestFormat: RootJsonFormat[GetStatusRequest] = jsonFormat1(GetStatusRequest)
+  implicit val tickersTrackingResponseFormat: RootJsonFormat[TickersTrackingResponse] = jsonFormat2(TickersTrackingResponse)
+
+  implicit val historicalDataValuesFormat: RootJsonFormat[HistoricalDataValues] = jsonFormat2(HistoricalDataValues)
+  implicit val historicalDataResponseFormat: RootJsonFormat[HistoricalDataResponse] = jsonFormat1(HistoricalDataResponse)
+
+  implicit val scheduledTasksResponseFormat: RootJsonFormat[ScheduledTasksResponse] = jsonFormat1(ScheduledTasksResponse)
 }

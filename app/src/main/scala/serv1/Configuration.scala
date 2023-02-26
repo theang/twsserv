@@ -10,4 +10,8 @@ object Configuration {
   val callDuration: FiniteDuration = 5.second
   val defaultPrecision: Int = 2
   val DATABASE_BLOCKING_DISPATCHER_NAME = "database-blocking-dispatcher"
+  val DATABASE_SCHEMA_VERSION_PARAMETER_TYP = "database"
+  val DATABASE_SCHEMA_VERSION_PARAMETER_NAME = "DATABASE_SCHEMA_VERSION"
+  val DATABASE_SCHEMA_VERSION: String = "1"
+  val DATABASE_SCHEMA_UPGRADE_FILE: String = "schema_upgrade.yaml"
 }

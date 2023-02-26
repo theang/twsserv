@@ -26,4 +26,11 @@ object TestData {
   val testTickerJobState: TickerJobState = TickerJobState(JobStatuses.IN_PROGRESS,
     tickers = testTickers, loadedTickers = List.empty, errors = List.empty, from, to)
 
+  val testScheduleName: String = "test"
+  val testSchedule: String = "* * * * *"
+  val testScheduleRun: Long = LocalDateTimeUtil.toEpoch(from)
+
+  val testScheduleName1: String = "newTest"
+  val testSchedule1: String = "10-20/2 * * * *"
+  val testScheduleRun1: Long = LocalDateTimeUtil.toEpoch(from) + 1000
 }

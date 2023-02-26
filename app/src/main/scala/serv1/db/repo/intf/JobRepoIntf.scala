@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 trait JobRepoIntf {
-  def createTickerJob(tickersToLoad: List[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID
+  def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID
 
   def getTickerJobs(jobId: UUID): Seq[TickerJobState]
 

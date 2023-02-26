@@ -90,12 +90,19 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
   def readRange(ticker: TickerLoadType, from: Long, to: Long): Seq[HistoricalData] = {
     createTableIfNotExists(ticker)
     val tickerDataTable = new TickerDataTableGen(ticker)
-    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.time >= from && td.time <= to)
+    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.time >= from && td.time <= to).sortBy(_.time)
     val tickerData = Await.result(DB.db.run(tableQuery.result), Duration.Inf)
     val tickerDataHD: Seq[HistoricalData] = tickerData.map(
       TickerData.tickerDataToHistoricalData
     )
     tickerDataHD
+  }
+
+  def latestDate(ticker: TickerLoadType): Option[Long] = {
+    createTableIfNotExists(ticker)
+    val tickerDataTable = new TickerDataTableGen(ticker)
+    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].map(_.time).max
+    Await.result(DB.db.run(tableQuery.result), Duration.Inf)
   }
 
   def truncate(ticker: TickerLoadType): Unit = {
