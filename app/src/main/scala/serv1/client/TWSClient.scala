@@ -185,7 +185,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   override def tickPrice(i: Int, i1: Int, v: Double, tickAttrib: TickAttrib): Unit =
     logger.debug("tickPrice response")
 
-  override def tickSize(i: Int, i1: Int, i2: Int): Unit =
+  override def tickSize(i: Int, i1: Int, i2: Decimal): Unit =
     logger.debug("tickSize response")
 
   override def tickOptionComputation(i: Int, i1: Int, i2: Int, v: Double, v1: Double, v2: Double, v3: Double, v4: Double, v5: Double, v6: Double, v7: Double): Unit =
@@ -200,7 +200,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   override def tickEFP(i: Int, i1: Int, v: Double, s: String, v1: Double, i2: Int, s1: String, v2: Double, v3: Double): Unit =
     logger.debug("tickEFP response")
 
-  override def orderStatus(i: Int, s: String, v: Double, v1: Double, v2: Double, i1: Int, i2: Int, v3: Double, i3: Int, s1: String, v4: Double): Unit =
+  override def orderStatus(i: Int, s: String, v: Decimal, v1: Decimal, v2: Double, i1: Int, i2: Int, v3: Double, i3: Int, s1: String, v4: Double): Unit =
     logger.debug("orderStatus response")
 
   override def openOrder(i: Int, contract: Contract, order: Order, orderState: OrderState): Unit =
@@ -212,7 +212,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   override def updateAccountValue(s: String, s1: String, s2: String, s3: String): Unit =
     logger.debug("updateAccountValue response")
 
-  override def updatePortfolio(contract: Contract, v: Double, v1: Double, v2: Double, v3: Double, v4: Double, v5: Double, s: String): Unit =
+  override def updatePortfolio(contract: Contract, v: Decimal, v1: Double, v2: Double, v3: Double, v4: Double, v5: Double, s: String): Unit =
     logger.debug("updatePortfolio response")
 
   override def updateAccountTime(s: String): Unit =
@@ -246,10 +246,10 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   override def execDetailsEnd(i: Int): Unit =
     logger.debug("execDetailsEnd response")
 
-  override def updateMktDepth(i: Int, i1: Int, i2: Int, i3: Int, v: Double, i4: Int): Unit =
+  override def updateMktDepth(i: Int, i1: Int, i2: Int, i3: Int, v: Double, i4: Decimal): Unit =
     logger.debug("updateMktDepth response")
 
-  override def updateMktDepthL2(i: Int, i1: Int, s: String, i2: Int, i3: Int, v: Double, i4: Int, b: Boolean): Unit =
+  override def updateMktDepthL2(i: Int, i1: Int, s: String, i2: Int, i3: Int, v: Double, i4: Decimal, b: Boolean): Unit =
     logger.debug("updateMktDepthL2 response")
 
   override def updateNewsBulletin(i: Int, i1: Int, s: String, s1: String): Unit =
@@ -282,7 +282,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   override def scannerDataEnd(i: Int): Unit =
     logger.debug("scannerDataEnd response")
 
-  override def realtimeBar(i: Int, l: Long, v: Double, v1: Double, v2: Double, v3: Double, l1: Long, v4: Double, i1: Int): Unit =
+  override def realtimeBar(i: Int, l: Long, v: Double, v1: Double, v2: Double, v3: Double, l1: Decimal, v4: Decimal, i1: Int): Unit =
     logger.debug("realtimeBar response")
 
   override def currentTime(l: Long): Unit =
@@ -303,7 +303,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   override def commissionReport(commissionReport: CommissionReport): Unit =
     logger.debug("commissionReport response")
 
-  override def position(s: String, contract: Contract, v: Double, v1: Double): Unit =
+  override def position(s: String, contract: Contract, v: Decimal, v1: Double): Unit =
     logger.debug("position response")
 
   override def positionEnd(): Unit =
@@ -341,9 +341,9 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
     logger.warn(s"TWSClient warning: $s")
   }
 
-  override def error(i: Int, i1: Int, s: String): Unit = {
-    logger.debug(s"error: $i, $i1, $s")
-    ClientOperationHandlers.handleError(i, i1, s)
+  override def error(i: Int, i1: Int, s: String, advancedOrderRejectJson: String): Unit = {
+    logger.debug(s"error: $i, $i1, $s, $advancedOrderRejectJson")
+    ClientOperationHandlers.handleError(i, i1, s, advancedOrderRejectJson)
   }
 
   override def connectionClosed(): Unit =
@@ -356,7 +356,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
     }
   }
 
-  override def positionMulti(i: Int, s: String, s1: String, contract: Contract, v: Double, v1: Double): Unit =
+  override def positionMulti(i: Int, s: String, s1: String, contract: Contract, v: Decimal, v1: Double): Unit =
     logger.debug("positionMulti response")
 
   override def positionMultiEnd(i: Int): Unit =
@@ -428,7 +428,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   override def pnl(i: Int, v: Double, v1: Double, v2: Double): Unit =
     logger.debug("pnl response")
 
-  override def pnlSingle(i: Int, i1: Int, v: Double, v1: Double, v2: Double, v3: Double): Unit =
+  override def pnlSingle(i: Int, d: Decimal, v: Double, v1: Double, v2: Double, v3: Double): Unit =
     logger.debug("pnlSingle response")
 
   override def historicalTicks(i: Int, list: util.List[HistoricalTick], b: Boolean): Unit =
@@ -440,10 +440,10 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   override def historicalTicksLast(i: Int, list: util.List[HistoricalTickLast], b: Boolean): Unit =
     logger.debug("historicalTicksLast response")
 
-  override def tickByTickAllLast(i: Int, i1: Int, l: Long, v: Double, i2: Int, tickAttribLast: TickAttribLast, s: String, s1: String): Unit =
+  override def tickByTickAllLast(i: Int, i1: Int, l: Long, v: Double, i2: Decimal, tickAttribLast: TickAttribLast, s: String, s1: String): Unit =
     logger.debug("tickByTickAllLast response")
 
-  override def tickByTickBidAsk(i: Int, l: Long, v: Double, v1: Double, i1: Int, i2: Int, tickAttribBidAsk: TickAttribBidAsk): Unit =
+  override def tickByTickBidAsk(i: Int, l: Long, v: Double, v1: Double, d: Decimal, d1: Decimal, tickAttribBidAsk: TickAttribBidAsk): Unit =
     logger.debug("tickByTickBidAsk response")
 
   override def tickByTickMidPoint(i: Int, l: Long, v: Double): Unit =
@@ -460,4 +460,16 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
 
   override def replaceFAEnd(i: Int, s: String): Unit =
     logger.debug("replaceFAEnd response")
+
+  override def wshMetaData(i: Int, s: String): Unit =
+    logger.debug("wshMetaData response")
+
+  override def wshEventData(i: Int, s: String): Unit =
+    logger.debug("wshEventData response")
+
+  override def historicalSchedule(i: Int, s: String, s1: String, s2: String, list: util.List[HistoricalSession]): Unit =
+    logger.debug("historicalSchedule response")
+
+  override def userInfo(i: Int, s: String): Unit =
+    logger.debug("userInfo response")
 }

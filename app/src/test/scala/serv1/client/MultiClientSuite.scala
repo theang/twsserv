@@ -27,7 +27,7 @@ class MultiClientSuite extends AnyFunSuite {
             monitor.notify()
           }
         }
-      }, (code: Int, msg: String) => {
+      }, (code: Int, msg: String, rejectedJson: String) => {
         monitor.synchronized {
           error = true
           monitor.notify()

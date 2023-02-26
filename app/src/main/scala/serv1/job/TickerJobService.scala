@@ -27,9 +27,9 @@ class TickerJobService(client: DataClient,
     }
   }
 
-  def errorCallback(jobId: UUID, ticker: TickerLoadType, code: Int, msg: String): Unit = {
-    logger.error(s"Client error: code = $code, message = $msg")
-    jobRepo.updateJob(jobId, ticker, Option(s"$code $msg"))
+  def errorCallback(jobId: UUID, ticker: TickerLoadType, code: Int, msg: String, advancedOrderRejectJson: String): Unit = {
+    logger.error(s"Client error: code = $code, message = $msg, advancedOrderRejectJson = $advancedOrderRejectJson")
+    jobRepo.updateJob(jobId, ticker, Option(s"$code $msg $advancedOrderRejectJson"))
   }
 
   def loadTicker(jobId: UUID, ticker: TickerLoadType, from: LocalDateTime, to: LocalDateTime): Unit = {
@@ -41,7 +41,7 @@ class TickerJobService(client: DataClient,
       BarSizeConverter.getBarSizeSeconds(ticker.barSize),
       ticker.tickerType.prec,
       (data: Seq[HistoricalData], last: Boolean) => saveHistoricalData(jobId, ticker, data, last),
-      (code: Int, msg: String) => errorCallback(jobId, ticker, code, msg))
+      (code: Int, msg: String, advancedOrderRejectJson: String) => errorCallback(jobId, ticker, code, msg, advancedOrderRejectJson))
   }
 
   def loadTickers(jobId: UUID, tickers: List[TickerLoadType],

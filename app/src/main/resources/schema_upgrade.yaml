@@ -1,0 +1,16 @@
+upgrade_0_to_1: |+
+  START TRANSACTION;
+  DO $$
+  DECLARE
+   sch text := 'public';
+   tbl text;
+  BEGIN
+  FOR tbl IN
+    SELECT table_name FROM information_schema.tables
+    WHERE  table_schema in (sch)
+      AND  table_name  like 'TD_%'
+  LOOP
+  EXECUTE format('ALTER TABLE %I.%I ALTER COLUMN "VOL" TYPE double precision USING "VOL"::double precision', sch, tbl);
+  END LOOP;
+  END $$ LANGUAGE 'plpgsql';
+  COMMIT;

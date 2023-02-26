@@ -16,7 +16,7 @@ object ClientOperationHandlers extends Logging {
   val THREADS_NUMBER = 5
   implicit val context: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(THREADS_NUMBER))
   val LOAD_CHUNK_SIZE: Int = config.getInt("loadChunkSize")
-  type ErrorHandler = (Int, String) => Unit
+  type ErrorHandler = (Int, String, String) => Unit
 
   type HistoricalDataOperationCallback = (Seq[HistoricalData], Boolean) => Unit
 
@@ -69,12 +69,12 @@ object ClientOperationHandlers extends Logging {
     }
   }
 
-  def handleError(reqN: Int, code: Int, msg: String): Unit = {
+  def handleError(reqN: Int, code: Int, msg: String, advancedOrderRejectJson: String): Unit = {
     errorHandlers.get(reqN) match {
       case Some(errH) =>
-        errH(code, msg)
+        errH(code, msg, advancedOrderRejectJson)
       case None =>
-        logger.warn(s"handleError: reqN = $reqN, code = $code, msg = $msg;" +
+        logger.warn(s"handleError: reqN = $reqN, code = $code, msg = $msg, advancedOrderRejectJson = $advancedOrderRejectJson;" +
           s" no request found by number")
     }
   }

@@ -32,7 +32,7 @@ class TickerDataTableGen(tt: TickerLoadType) {
 
     def close = column[Long]("CLOSE")
 
-    def volume = column[Long]("VOL")
+    def volume = column[Double]("VOL")
 
     def * = (id, time, open, high, low, close, volume) <> ((TickerData.apply _).tupled, TickerData.unapply)
 

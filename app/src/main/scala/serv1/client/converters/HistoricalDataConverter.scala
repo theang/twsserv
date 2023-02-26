@@ -19,6 +19,6 @@ object HistoricalDataConverter {
         },
         (b.high() * precMultiplier).toLong, (b.low() * precMultiplier).toLong,
         (b.open() * precMultiplier).toLong, (b.close() * precMultiplier).toLong,
-        b.volume())
+        b.volume().value().doubleValue())
   }
 }

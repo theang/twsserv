@@ -8,8 +8,8 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs._
+import jakarta.ws.rs.core.MediaType
 import serv1.rest.JsonFormats
 import serv1.rest.schedule.ScheduleActor._
 
@@ -92,7 +92,32 @@ class Schedule(scheduleActor: ActorRef[RequestMessage])(implicit system: ActorSy
       }
     }
 
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Operation(summary = "Run schedule task", description = "Runs task, schedule is not updated",
+    requestBody = new RequestBody(required = true,
+      content = Array(new Content(schema = new Schema(implementation = classOf[RunScheduledTaskRequest])))),
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "CreateScheduledData response",
+        content = Array(new Content(schema = new Schema(implementation = classOf[ScheduledTaskResponse])))),
+      new ApiResponse(responseCode = "500", description = "Internal server error"))
+  )
+  def runScheduledTask: Route =
+    path("runTask") {
+      post {
+        entity(as[RunScheduledTaskRequest]) { request =>
+          val result = scheduleActor.ask(replyTo => RunScheduledTaskRequestRef(
+            request, replyTo))
+          complete {
+            result.mapTo[ScheduledTaskResponse]
+          }
+        }
+      }
+    }
+
+
   def routes: Route = {
-    createScheduledTask ~ renameScheduledTask ~ changeScheduleOfScheduledTask
+    createScheduledTask ~ renameScheduledTask ~ changeScheduleOfScheduledTask ~ runScheduledTask
   }
 }

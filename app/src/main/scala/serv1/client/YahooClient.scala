@@ -87,7 +87,7 @@ object YahooClient extends DataClient with Logging with PowerOperator {
     connection.connect()
     if (connection.getResponseCode >= 400) {
       logger.debug(s"ResponseCode: ${connection.getResponseCode}")
-      error(connection.getResponseCode, "Error when loading historical data")
+      error(connection.getResponseCode, "Error when loading historical data", "")
     } else {
       logger.debug(s"reading Historical Data")
       cont(readHistoricalDataFromStream(connection.getInputStream, prec), true)

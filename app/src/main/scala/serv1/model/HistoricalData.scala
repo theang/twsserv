@@ -6,5 +6,5 @@ case class HistoricalData(
                            var low: Long,
                            var open: Long,
                            var close: Long,
-                           var vol: Long
+                           var vol: Double
                          )

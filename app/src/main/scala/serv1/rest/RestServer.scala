@@ -10,8 +10,9 @@ import akka.http.scaladsl.server.RouteConcatenation
 import serv1.Configuration
 import serv1.client.MultiClient
 import serv1.db.TickerDataActor
-import serv1.db.repo.impl.{JobRepo, ScheduledTaskRepo, TickerDataRepo, TickerTrackingRepo, TickerTypeRepo}
+import serv1.db.repo.impl._
 import serv1.job.{TickerJobActor, TickerJobService, TickerTrackerJobActor, TickerTrackerJobService}
+import serv1.rest.historical.HistoricalDataActor
 import serv1.rest.loaddata.{CheckLoadJobStateActor, LoadData, LoadDataActor, LoadService}
 import serv1.rest.schedule.{Schedule, ScheduleActor}
 import serv1.rest.ticker.{TickerJobControl, TickerJobControlActor}
@@ -43,7 +44,8 @@ object RestServer extends RouteConcatenation {
     val tickerTrackerJobService = new TickerTrackerJobService(loadService,
       ScheduledTaskRepo, TickerTypeRepo, TickerTrackingRepo, TickerDataRepo)
     val tickerTrackerJobActorRef = ctx.spawn(TickerTrackerJobActor(tickerTrackerJobService), "tickerTrackerJobActor")
-    val scheduleActorRef = ctx.spawn(ScheduleActor(ScheduledTaskRepo), "scheduleActor")
+    val scheduleActorRef = ctx.spawn(ScheduleActor(ScheduledTaskRepo, tickerTrackerJobService), "scheduleActor")
+    val historicalDataActorRef = ctx.spawn(HistoricalDataActor(TickerDataRepo), "historicalDataActor")
     val routes = {
       path("hello") {
         get {
@@ -51,7 +53,7 @@ object RestServer extends RouteConcatenation {
         }
       }
     } ~
-      new LoadData(loadDataActorRef, checkJobActorRef).routes ~
+      new LoadData(loadDataActorRef, checkJobActorRef, historicalDataActorRef).routes ~
       new Schedule(scheduleActorRef).routes ~
       new TickerJobControl(tickerJobControlActorRef).routes
 
