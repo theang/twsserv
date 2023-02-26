@@ -76,7 +76,7 @@ class LoadData(loadDataActor: ActorRef[LoadDataRequestRef],
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Operation(summary = "Get candle data", description = "Get candle data",
-    requestBody = new RequestBody(required = false,
+    requestBody = new RequestBody(required = true,
       content = Array(new Content(schema = new Schema(implementation = classOf[LoadDataRequest])))),
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Check job state response",

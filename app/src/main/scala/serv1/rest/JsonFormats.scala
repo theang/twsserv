@@ -7,7 +7,7 @@ import serv1.model.HistoricalData
 import serv1.model.job.JobStatuses
 import serv1.model.ticker.BarSizes.BarSize
 import serv1.model.ticker.{BarSizes, TickerError, TickerLoadType, TickerType}
-import serv1.rest.historical.HistoricalDataActor.HistoricalDataResponse
+import serv1.rest.historical.HistoricalDataActor.{HistoricalDataResponse, HistoricalDataValues}
 import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataResponse, LoadPeriod}
 import serv1.rest.schedule.ScheduleActor._
 import serv1.rest.ticker.TickerJobControlActor.{AddTickersTrackingRequest, GetStatusRequest, RemoveTickersTrackingRequest, TickersTrackingResponse}
@@ -149,5 +149,6 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val getStatusRequestFormat: RootJsonFormat[GetStatusRequest] = jsonFormat1(GetStatusRequest)
   implicit val tickersTrackingResponseFormat: RootJsonFormat[TickersTrackingResponse] = jsonFormat2(TickersTrackingResponse)
 
+  implicit val historicalDataValuesFormat: RootJsonFormat[HistoricalDataValues] = jsonFormat2(HistoricalDataValues)
   implicit val historicalDataResponseFormat: RootJsonFormat[HistoricalDataResponse] = jsonFormat1(HistoricalDataResponse)
 }

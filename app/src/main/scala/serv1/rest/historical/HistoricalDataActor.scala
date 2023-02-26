@@ -9,17 +9,19 @@ import serv1.rest.loaddata.LoadDataActor.LoadPeriod
 import serv1.util.LocalDateTimeUtil
 
 object HistoricalDataActor {
-  case class HistoricalDataResponse(tickers: Map[TickerLoadType, Seq[HistoricalData]])
+  case class HistoricalDataValues(ticker: TickerLoadType, data: Seq[HistoricalData])
+
+  case class HistoricalDataResponse(tickers: Seq[HistoricalDataValues])
 
   case class HistoricalDataRequest(tickers: List[TickerLoadType], period: LoadPeriod, replyTo: ActorRef[HistoricalDataResponse])
 
   def apply(tickerDataRepo: TickerDataRepoIntf): Behavior[HistoricalDataRequest] = {
     Behaviors.receiveMessage[HistoricalDataRequest] {
       case HistoricalDataRequest(tickers, period, replyTo) =>
-        val resultMap = tickers.map(ticker => (ticker, tickerDataRepo.readRange(ticker,
+        val resultList = tickers.map(ticker => HistoricalDataValues(ticker, tickerDataRepo.readRange(ticker,
           LocalDateTimeUtil.toEpoch(period.from),
-          LocalDateTimeUtil.toEpoch(period.to)))).toMap
-        replyTo ! HistoricalDataResponse(resultMap)
+          LocalDateTimeUtil.toEpoch(period.to))))
+        replyTo ! HistoricalDataResponse(resultList)
         Behaviors.same
     }
   }
