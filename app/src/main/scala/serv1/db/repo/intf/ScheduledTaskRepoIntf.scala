@@ -13,6 +13,8 @@ trait ScheduledTaskRepoIntf {
 
   def updateName(name: String, newName: String): Int
 
+  def getAllScheduledTask: Seq[ScheduledTask]
+
   def getScheduledTaskById(id: Int): Seq[ScheduledTask]
 
   def getScheduledTaskByName(name: String): Seq[ScheduledTask]

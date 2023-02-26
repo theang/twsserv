@@ -33,7 +33,7 @@ class TickerJobControl(tickerJobControlActor: ActorRef[RequestMessage])(implicit
       new ApiResponse(responseCode = "500", description = "Internal server error"))
   )
   def addTickers(): Route =
-    path("/tickerJob/addTickers") {
+    path("tickerJob" / "addTickers") {
       post {
         entity(as[AddTickersTrackingRequest]) { request =>
           logger.debug(s"getTickets called: $request")
@@ -59,7 +59,7 @@ class TickerJobControl(tickerJobControlActor: ActorRef[RequestMessage])(implicit
       new ApiResponse(responseCode = "500", description = "Internal server error"))
   )
   def removeTickers(): Route =
-    path("/tickerJob/removeTickers") {
+    path("tickerJob" / "removeTickers") {
       post {
         entity(as[RemoveTickersTrackingRequest]) { request =>
           logger.debug(s"removeTickers called: $request")

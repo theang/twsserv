@@ -28,9 +28,15 @@ object ScheduleActor {
 
   case class ChangeScheduleRequestRef(changeScheduleRequest: ChangeScheduleRequest, replyTo: ActorRef[ResponseMessage]) extends RequestMessage
 
+  case class QueryScheduledTaskRef(id: Int, replyTo: ActorRef[ResponseMessage]) extends RequestMessage
+
+  case class QueryAllScheduledTasksRef(replyTo: ActorRef[ResponseMessage]) extends RequestMessage
+
   sealed trait ResponseMessage
 
   case class ScheduledTaskResponse(id: Int, name: String, schedule: String, nextRun: LocalDateTime) extends ResponseMessage
+
+  case class ScheduledTasksResponse(tasks: Seq[ScheduledTaskResponse]) extends ResponseMessage
 
   def apply(scheduledTaskRepoIntf: ScheduledTaskRepoIntf,
             tickerTrackerJobService: TickerTrackerJobService): Behavior[RequestMessage] = {
@@ -61,6 +67,16 @@ object ScheduleActor {
         val currentEpoch = LocalDateTimeUtil.toEpoch(runScheduledTaskRequest.currentDateTime.getOrElse(LocalDateTimeUtil.getCurrentDateTimeUTC))
         tickerTrackerJobService.runTrackingJob(currentEpoch, task.name, task.id)
         replyTo ! ScheduledTaskResponse(task.id, task.name, task.schedule, LocalDateTimeUtil.fromEpoch(task.nextRun))
+        Behaviors.same
+      case QueryAllScheduledTasksRef(replyTo) =>
+        replyTo ! ScheduledTasksResponse(scheduledTaskRepoIntf.getAllScheduledTask.map { task =>
+          ScheduledTaskResponse(task.id, task.name, task.schedule, LocalDateTimeUtil.fromEpoch(task.nextRun))
+        })
+        Behaviors.same
+      case QueryScheduledTaskRef(id, replyTo) =>
+        replyTo ! scheduledTaskRepoIntf.getScheduledTaskById(id).map { task =>
+          ScheduledTaskResponse(task.id, task.name, task.schedule, LocalDateTimeUtil.fromEpoch(task.nextRun))
+        }.head
         Behaviors.same
     }
   }

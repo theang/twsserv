@@ -39,6 +39,10 @@ object ScheduledTaskRepo extends ScheduledTaskRepoIntf {
     Await.result(DB.db.run(updateTaskQuery), Duration.Inf)
   }
 
+  def getAllScheduledTask: Seq[ScheduledTask] = {
+    Await.result(DB.db.run(ScheduledTaskTable.query.result), Duration.Inf)
+  }
+
   def getScheduledTaskById(id: Int): Seq[ScheduledTask] = {
     Await.result(DB.db.run(ScheduledTaskTable.query.filter(_.id === id).result), Duration.Inf)
   }

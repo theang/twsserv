@@ -151,4 +151,6 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit val historicalDataValuesFormat: RootJsonFormat[HistoricalDataValues] = jsonFormat2(HistoricalDataValues)
   implicit val historicalDataResponseFormat: RootJsonFormat[HistoricalDataResponse] = jsonFormat1(HistoricalDataResponse)
+
+  implicit val scheduledTasksResponseFormat: RootJsonFormat[ScheduledTasksResponse] = jsonFormat1(ScheduledTasksResponse)
 }

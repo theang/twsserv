@@ -50,7 +50,7 @@ object YahooClient extends DataClient with Logging with PowerOperator {
             (low.toFloat * (10 ** prec)).toLong,
             (open.toFloat * (10 ** prec)).toLong,
             (close.toFloat * (10 ** prec)).toLong,
-            vol.toLong)
+            vol.toDouble)
         } catch {
           case exc: DateTimeParseException =>
             logger.warn(s"Could not parse date: $date")

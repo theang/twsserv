@@ -117,7 +117,46 @@ class Schedule(scheduleActor: ActorRef[RequestMessage])(implicit system: ActorSy
     }
 
 
+  @GET
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Operation(summary = "Query scheduled tasks", description = "Query scheduled tasks",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Scheduled tasks",
+        content = Array(new Content(schema = new Schema(implementation = classOf[ScheduledTasksResponse])))),
+      new ApiResponse(responseCode = "500", description = "Internal server error"))
+  )
+  def queryScheduledTasks: Route =
+    path("tasks") {
+      get {
+        val result = scheduleActor.ask(replyTo => QueryAllScheduledTasksRef(replyTo))
+        complete {
+          result.mapTo[ScheduledTasksResponse]
+        }
+      }
+    }
+
+  @GET
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Operation(summary = "Query scheduled task by id", description = "Query scheduled task",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Scheduled task",
+        content = Array(new Content(schema = new Schema(implementation = classOf[ScheduledTaskResponse])))),
+      new ApiResponse(responseCode = "500", description = "Internal server error"))
+  )
+  def queryScheduledTask: Route =
+    path("task" / IntNumber) { taskId: Int =>
+      get {
+        val result = scheduleActor.ask(replyTo => QueryScheduledTaskRef(taskId, replyTo))
+        complete {
+          result.mapTo[ScheduledTaskResponse]
+        }
+      }
+    }
+
+
   def routes: Route = {
-    createScheduledTask ~ renameScheduledTask ~ changeScheduleOfScheduledTask ~ runScheduledTask
+    createScheduledTask ~ renameScheduledTask ~ changeScheduleOfScheduledTask ~ runScheduledTask ~ queryScheduledTasks
   }
 }
