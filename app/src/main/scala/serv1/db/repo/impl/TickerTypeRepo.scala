@@ -36,9 +36,14 @@ object TickerTypeRepo extends TickerTypeRepoIntf {
       TickerTypeDB.tickerTypeDBToTickerLoadType)
   }
 
-  def queryTickerType(tt: TickerLoadType): Int = {
+  def queryTickerType(tt: TickerLoadType): Option[Int] = {
     val tableQuery = TickerTypeTable.query
-    Await.result(DB.db.run(tableQuery.filter(TickerTypeTable.findTicker(tt)).map(_.id).result), Duration.Inf).head
+    val tickerTypes: Seq[Int] = Await.result(DB.db.run(tableQuery.filter(TickerTypeTable.findTicker(tt)).map(_.id).result), Duration.Inf)
+    if (tickerTypes.isEmpty) {
+      Option.empty
+    } else {
+      Option(tickerTypes.head)
+    }
   }
 
   def removeTickerType(tt: TickerLoadType): Int = {
