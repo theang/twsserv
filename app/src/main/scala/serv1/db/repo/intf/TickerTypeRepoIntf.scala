@@ -9,7 +9,7 @@ trait TickerTypeRepoIntf {
 
   def queryTickers(ids: Seq[Int]): Seq[TickerLoadType]
 
-  def queryTickerType(tt: TickerLoadType): Int
+  def queryTickerType(tt: TickerLoadType): Option[Int]
 
   def removeTickerType(tt: TickerLoadType): Int
 

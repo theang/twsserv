@@ -8,7 +8,7 @@ object TickerTrackingTable {
 }
 
 class TickerTrackingTable(tag: Tag) extends Table[TickerTracking](tag, "TICKER_TRACKING") {
-  def id = column[Int]("ID", O.PrimaryKey, O.Unique)
+  def id = column[Int]("ID", O.PrimaryKey, O.Unique, O.AutoInc)
 
   def tickerType = column[Int]("TICKER_TYPE_ID")
 
