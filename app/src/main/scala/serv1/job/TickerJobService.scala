@@ -25,7 +25,7 @@ class TickerJobService(client: DataClient,
   var tickerJobActor: Option[ActorRef[TickerJobActor.JobActorMessage]] = None
 
   def saveHistoricalData(jobId: UUID, ticker: TickerLoadType, data: Seq[HistoricalData], last: Boolean): Unit = {
-    logger.debug(s"writing ${data.size}")
+    logger.info(s"writing ${data.size} $ticker $last")
     tickerDataActor ! Write(1, ticker = ticker, historicalData = data, replyTo = null)
     if (last) {
       jobRepo.updateJob(jobId, ticker)

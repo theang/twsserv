@@ -8,6 +8,7 @@ import serv1.model.job.JobStatuses
 import serv1.model.ticker.{TickerError, TickerLoadType}
 import serv1.rest.JsonFormats
 import slick.jdbc.PostgresProfile.api._
+import slick.util.Logging
 import spray.json._
 
 import java.time.LocalDateTime
@@ -16,7 +17,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-object JobRepo extends JsonFormats with JobRepoIntf {
+object JobRepo extends JsonFormats with JobRepoIntf with Logging {
   def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID = {
     val id = UUID.randomUUID()
     Await.result(DB.db.run(DBIO.seq(JobTable.query += Job(id,
@@ -86,6 +87,7 @@ object JobRepo extends JsonFormats with JobRepoIntf {
     updateJob(jobId, ticker, Option.empty, ignore = false)
 
   def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ignore: Boolean): Unit = {
+    logger.info(s"Updating job $jobId for ticker, $ticker error = $error, ignore = $ignore")
     val query = JobTable.query.filter(_.jobId === jobId)
     val action = query.result.headOption.flatMap {
       case Some(job) =>
