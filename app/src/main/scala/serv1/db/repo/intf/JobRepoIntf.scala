@@ -1,6 +1,7 @@
 package serv1.db.repo.intf
 
 import serv1.job.TickerJobState
+import serv1.model.job.JobStatuses
 import serv1.model.ticker.TickerLoadType
 
 import java.time.LocalDateTime
@@ -9,11 +10,13 @@ import java.util.UUID
 trait JobRepoIntf {
   def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID
 
-  def getTickerJobs(jobId: UUID): Seq[TickerJobState]
+  def getTickerJobsByStates(jobStatuses: Set[JobStatuses.JobStatus]): Seq[(UUID, TickerJobState)]
 
-  def updateTickerJobState(t: TickerJobState, ticker: TickerLoadType, error: Option[String]): TickerJobState
+  def getTickerJobStates(jobId: UUID): Seq[TickerJobState]
 
-  def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String]): Unit
+  def updateTickerJobState(t: TickerJobState, ticker: TickerLoadType, error: Option[String], ignore: Boolean): TickerJobState
+
+  def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ingore: Boolean): Unit
 
   def updateJob(jobId: UUID, ticker: TickerLoadType): Unit
 

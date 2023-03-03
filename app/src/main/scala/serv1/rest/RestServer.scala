@@ -11,7 +11,7 @@ import serv1.Configuration
 import serv1.client.MultiClient
 import serv1.db.TickerDataActor
 import serv1.db.repo.impl._
-import serv1.job.{TickerJobActor, TickerJobService, TickerTrackerJobActor, TickerTrackerJobService}
+import serv1.job._
 import serv1.rest.historical.HistoricalDataActor
 import serv1.rest.loaddata.{CheckLoadJobStateActor, LoadData, LoadDataActor, LoadService}
 import serv1.rest.schedule.{Schedule, ScheduleActor}
@@ -46,6 +46,7 @@ object RestServer extends RouteConcatenation {
     val tickerTrackerJobActorRef = ctx.spawn(TickerTrackerJobActor(tickerTrackerJobService), "tickerTrackerJobActor")
     val scheduleActorRef = ctx.spawn(ScheduleActor(ScheduledTaskRepo, tickerTrackerJobService), "scheduleActor")
     val historicalDataActorRef = ctx.spawn(HistoricalDataActor(TickerDataRepo), "historicalDataActor")
+    val restartLoadActor = ctx.spawn(RestartLoadActor(JobRepo, tickerActorRef), "restartLoadActor")
     val routes = {
       path("hello") {
         get {
