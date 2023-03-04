@@ -99,19 +99,22 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
       "tickers" -> obj.tickers.toJson,
       "errors" -> obj.errors.toJson,
       "loadedTickers" -> obj.loadedTickers.toJson,
+      "ignoredTickers" -> obj.ignoredTickers.toJson,
       "from" -> obj.from.toJson,
       "to" -> obj.to.toJson
     )
 
     override def read(json: JsValue): TickerJobState = {
-      json.asJsObject.getFields("status", "tickers", "errors", "loadedTickers", "from", "to") match {
-        case Seq(status, tickers, errors, loadedTickers, from, to) =>
-          TickerJobState(status.convertTo[JobStatuses.JobStatus],
-            tickers.convertTo[List[TickerLoadType]],
-            loadedTickers.convertTo[List[TickerLoadType]],
-            errors.convertTo[List[TickerError]],
-            from.convertTo[LocalDateTime],
-            to.convertTo[LocalDateTime]
+      List("status", "tickers", "errors", "loadedTickers", "ignoredTickers", "from", "to")
+        .map(json.asJsObject.fields.get) match {
+        case Seq(status, tickers, errors, loadedTickers, ignoredTickers, from, to) =>
+          TickerJobState(status.get.convertTo[JobStatuses.JobStatus],
+            tickers.get.convertTo[List[TickerLoadType]],
+            loadedTickers.fold(List[TickerLoadType]())(_.convertTo[List[TickerLoadType]]),
+            ignoredTickers.fold(List[TickerLoadType]())(_.convertTo[List[TickerLoadType]]),
+            errors.fold(List[TickerError]())(_.convertTo[List[TickerError]]),
+            from.get.convertTo[LocalDateTime],
+            to.get.convertTo[LocalDateTime]
           )
       }
     }

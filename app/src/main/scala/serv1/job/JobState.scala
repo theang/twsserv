@@ -10,6 +10,7 @@ sealed trait JobState
 case class TickerJobState(status: JobStatus,
                           tickers: List[TickerLoadType],
                           loadedTickers: List[TickerLoadType],
+                          ignoredTickers: List[TickerLoadType],
                           errors: List[TickerError],
                           from: LocalDateTime,
                           to: LocalDateTime) extends JobState

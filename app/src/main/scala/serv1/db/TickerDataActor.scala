@@ -2,7 +2,6 @@ package serv1.db
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.event.Logging
 import com.typesafe.config.Config
 import serv1.config.ServConfig
 import serv1.db.repo.intf.TickerDataRepoIntf
@@ -29,10 +28,17 @@ object TickerDataActor extends Logging {
 
   case object WriteFailed extends ResultMessage
 
+  sealed trait Message
+
   case class Write(attempt: Int,
                    ticker: TickerLoadType,
                    historicalData: Seq[HistoricalData],
-                   replyTo: ActorRef[ResultMessage])
+                   replyTo: ActorRef[ResultMessage]) extends Message
+
+  case class Retry(attempt: Int,
+                   description: String,
+                   action: () => Boolean,
+                   replyTo: ActorRef[ResultMessage]) extends Message
 
   def calculateRandomDelay(): FiniteDuration = {
     val msec = tickerRepoConstantDelay + random.nextInt(tickerRepoRandomDelay)
@@ -40,15 +46,15 @@ object TickerDataActor extends Logging {
   }
 
   def blockingWrite(tickerDataRepo: TickerDataRepoIntf,
-                    context: ActorContext[Write],
-                    timers: TimerScheduler[Write],
+                    context: ActorContext[Message],
+                    timers: TimerScheduler[Message],
                     timerKey: Int,
                     attempt: Int,
                     ticker: TickerLoadType,
                     historicalData: Seq[HistoricalData],
                     replyTo: ActorRef[ResultMessage]): Unit = {
     if (attempt > MAX_ATTEMPTS) {
-      context.log.warn(s"Giving up for $ticker loading ${historicalData.size} items of historical data")
+      logger.warn(s"Giving up for $ticker loading ${historicalData.size} items of historical data")
       if (replyTo != null) {
         replyTo ! WriteFailed
       }
@@ -67,9 +73,9 @@ object TickerDataActor extends Logging {
     }
   }
 
-  def apply(tickerDataRepo: TickerDataRepoIntf): Behavior[Write] = {
+  def apply(tickerDataRepo: TickerDataRepoIntf): Behavior[Message] = {
     Behaviors.withTimers { timers =>
-      Behaviors.receive[Write] {
+      Behaviors.receive[Message] {
         case (context, Write(attempt, ticker, historicalData, replyTo)) =>
           blockingWrite(tickerDataRepo,
             context,
@@ -79,6 +85,23 @@ object TickerDataActor extends Logging {
             ticker,
             historicalData,
             replyTo)
+          Behaviors.same
+        case (context, Retry(attempt, description, action, replyTo)) =>
+          if (attempt > MAX_ATTEMPTS) {
+            logger.warn(s"Giving up for action $description")
+            if (replyTo != null) {
+              replyTo ! WriteFailed
+            }
+          } else {
+            logger.debug(s"Execute action $description")
+            if (action()) {
+              if (replyTo != null) {
+                replyTo ! WriteSuccessful
+              }
+            } else {
+              timers.startSingleTimer(timerKey.getAndIncrement(), Retry(attempt + 1, description, action, replyTo), calculateRandomDelay())
+            }
+          }
           Behaviors.same
       }
     }

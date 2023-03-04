@@ -22,6 +22,6 @@ class LoadService(tickerJobActorRef: ActorRef[TickerJobActor.Run])(implicit syst
   }
 
   def checkJobStates(id: UUID): List[TickerJobState] = {
-    JobRepo.getTickerJobs(id).toList
+    JobRepo.getTickerJobStates(id).toList
   }
 }

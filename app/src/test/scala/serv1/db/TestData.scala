@@ -24,7 +24,7 @@ object TestData {
   val testHistoricalData1: HistoricalData = HistoricalData(LocalDateTimeUtil.toEpoch(from) + 60 * 60 * 24, 2100, 1100, 1600, 1700, 1100)
   val testHistoricalData2: HistoricalData = HistoricalData(LocalDateTimeUtil.toEpoch(to), 2050, 1050, 1550, 1650, 1050)
   val testTickerJobState: TickerJobState = TickerJobState(JobStatuses.IN_PROGRESS,
-    tickers = testTickers, loadedTickers = List.empty, errors = List.empty, from, to)
+    tickers = testTickers, loadedTickers = List.empty, errors = List.empty, ignoredTickers = List.empty, from = from, to = to)
 
   val testScheduleName: String = "test"
   val testSchedule: String = "* * * * *"

@@ -8,8 +8,8 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import jakarta.ws.rs._
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.{Consumes, PATCH, Path, Produces}
 import serv1.rest.JsonFormats
 import serv1.rest.ticker.TickerJobControlActor._
 import slick.util.Logging
@@ -73,7 +73,33 @@ class TickerJobControl(tickerJobControlActor: ActorRef[RequestMessage])(implicit
       }
     }
 
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Operation(summary = "Get tickers from a tickerJob", description = "Get tickers from a ticker job",
+    requestBody = new RequestBody(required = true,
+      content = Array(new Content(schema = new Schema(implementation = classOf[GetStatusRequest])))),
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "TickersTrackingResponse response",
+        content = Array(new Content(schema = new Schema(implementation = classOf[TickersTrackingResponse])))),
+      new ApiResponse(responseCode = "500", description = "Internal server error"))
+  )
+  def status(): Route =
+    path("tickerJob" / "status") {
+      post {
+        entity(as[GetStatusRequest]) { request =>
+          logger.debug(s"getTickers called: $request")
+          val result = tickerJobControlActor.ask(replyTo => GetStatusRequestRef(
+            request, replyTo))
+          logger.debug(s"getTickers called result: $result")
+          complete {
+            result.mapTo[TickersTrackingResponse]
+          }
+        }
+      }
+    }
+
   def routes: Route = {
-    addTickers ~ removeTickers
+    addTickers ~ removeTickers ~ status
   }
 }
