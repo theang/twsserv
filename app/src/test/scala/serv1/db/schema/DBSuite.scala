@@ -59,7 +59,7 @@ class DBSuite extends AnyFunSuite with JsonFormats with Logging {
     DB.createTables()
     val job = Job(TestID,
       TickerJobState(JobStatuses.IN_PROGRESS,
-        tickers = testTickers, List.empty, List.empty, from, to).toJson.prettyPrint
+        tickers = testTickers, List.empty, List.empty, List.empty, from, to).toJson.prettyPrint
     )
     DB.db.run(DBIO.seq(JobTable.query += job))
 

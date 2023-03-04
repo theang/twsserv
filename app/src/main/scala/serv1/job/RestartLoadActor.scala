@@ -4,6 +4,7 @@ import akka.actor.typed.scaladsl.AskPattern.{Askable, schedulerFromActorSystem}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.util.Timeout
+import serv1.Configuration.INITIAL_RESTART_DATA_LOAD_TASKS_ENABLED
 import serv1.db.repo.intf.JobRepoIntf
 import serv1.job.TickerJobActor.{Run, RunningState}
 import serv1.model.job.JobStatuses
@@ -16,7 +17,7 @@ object RestartLoadActor extends Logging {
   val DELAY: FiniteDuration = 10.seconds
   val CALL_EVERY: FiniteDuration = 60.seconds
 
-  var restart: Boolean = true
+  var restart: Boolean = INITIAL_RESTART_DATA_LOAD_TASKS_ENABLED
 
   implicit val timeout: Timeout = 1000.seconds
 
@@ -44,7 +45,7 @@ object RestartLoadActor extends Logging {
                 if (restart) {
                   notRunningIds.map { id => tickerJobActor.ask(replyTo => Run(id, replyTo)) }
                 } else {
-                  logger.info("restart is disabled")
+                  logger.info("serv1.job.RestartLoadActor.restart option is disabled")
                 }
                 Behaviors.same
             }

@@ -16,9 +16,9 @@ trait JobRepoIntf {
 
   def updateTickerJobState(t: TickerJobState, ticker: TickerLoadType, error: Option[String], ignore: Boolean): TickerJobState
 
-  def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ingore: Boolean): Unit
+  def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ingore: Boolean): Boolean
 
-  def updateJob(jobId: UUID, ticker: TickerLoadType): Unit
+  def updateJob(jobId: UUID, ticker: TickerLoadType): Boolean
 
   def removeJob(jobId: UUID): Unit
 }

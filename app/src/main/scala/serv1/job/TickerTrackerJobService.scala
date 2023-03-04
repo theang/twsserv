@@ -1,5 +1,6 @@
 package serv1.job
 
+import serv1.Configuration.INITIAL_TICKER_TRACKER_SCHEDULED_TASKS_ENABLED
 import serv1.db.repo.intf.{ScheduledTaskRepoIntf, TickerDataRepoIntf, TickerTrackingRepoIntf, TickerTypeRepoIntf}
 import serv1.model.ticker.BarSizes.{BarSize, DAY, HOUR, MIN15}
 import serv1.rest.loaddata.LoadService
@@ -15,6 +16,8 @@ class TickerTrackerJobService(loadService: LoadService,
   val DEFAULT_YEARS_FOR_DAILY = 5
   val DEFAULT_MONTHS_FOR_HOURLY = 3
   val DEFAULT_DAYS_FOR_15MIN = 7
+
+  var tickerTrackerScheduleEnabled: Boolean = INITIAL_TICKER_TRACKER_SCHEDULED_TASKS_ENABLED
 
   def defaultLoadPeriods(barSize: BarSize, epoch: Long): Long = {
     val localDate = LocalDateTimeUtil.fromEpoch(epoch)
@@ -48,8 +51,12 @@ class TickerTrackerJobService(loadService: LoadService,
   def runCurrentTrackingJobs(currentEpoch: Long): Unit = {
     scheduledTaskRepoIntf.getScheduledTasksBeforeNextRun(currentEpoch).foreach(scheduledTask => {
       val scheduleName = scheduledTask.name
-      scheduledTaskRepoIntf.updateNextRun(scheduleName, CronUtil.findNextRun(currentEpoch, scheduledTask.schedule))
-      runTrackingJob(currentEpoch, scheduleName, scheduledTask.id)
+      if (tickerTrackerScheduleEnabled) {
+        scheduledTaskRepoIntf.updateNextRun(scheduleName, CronUtil.findNextRun(currentEpoch, scheduledTask.schedule))
+        runTrackingJob(currentEpoch, scheduleName, scheduledTask.id)
+      } else {
+        logger.info(s"serv1.job.TickerTrackerJobService.tickerTrackerScheduleEnabled is disabled, job $scheduleName is not run, and next run: ${LocalDateTimeUtil.fromEpoch(scheduledTask.nextRun)} is not updated")
+      }
     })
   }
 }
