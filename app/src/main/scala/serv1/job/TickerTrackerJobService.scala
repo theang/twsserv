@@ -44,7 +44,8 @@ class TickerTrackerJobService(loadService: LoadService,
       logger.info(s"$taskName : running $tickers from $from")
       loadService.load(tickers,
         LocalDateTimeUtil.fromEpoch(from),
-        LocalDateTimeUtil.fromEpoch(currentEpoch))
+        LocalDateTimeUtil.fromEpoch(currentEpoch),
+        overwrite = false)
     }
   }
 

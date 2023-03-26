@@ -14,13 +14,13 @@ import serv1.job.TickerJobState
 import serv1.rest.JsonFormats
 import serv1.rest.historical.HistoricalDataActor.{HistoricalDataRequest, HistoricalDataResponse}
 import serv1.rest.loaddata.CheckLoadJobStateActor.CheckLoadJobRef
-import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataRequestRef, LoadDataResponse}
+import serv1.rest.loaddata.LoadDataActor._
 
 import java.util.UUID
 import scala.concurrent.duration._
 
 @Path("loadData")
-class LoadData(loadDataActor: ActorRef[LoadDataRequestRef],
+class LoadData(loadDataActor: ActorRef[Message],
                checkLoadJobState: ActorRef[CheckLoadJobRef],
                historicalDataActor: ActorRef[HistoricalDataRequest])(implicit system: ActorSystem[_])
   extends Directives with JsonFormats {
@@ -42,6 +42,29 @@ class LoadData(loadDataActor: ActorRef[LoadDataRequestRef],
       post {
         entity(as[LoadDataRequest]) { request =>
           val result = loadDataActor.ask(replyTo => LoadDataRequestRef(request, replyTo))
+          complete {
+            result.mapTo[LoadDataResponse]
+          }
+        }
+      }
+    }
+
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Operation(summary = "Reload Ticker data from TWS", description = "Reload ticker data",
+    requestBody = new RequestBody(required = true,
+      content = Array(new Content(schema = new Schema(implementation = classOf[ReloadDataRequest])))),
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "ReloadData response",
+        content = Array(new Content(schema = new Schema(implementation = classOf[LoadDataResponses])))),
+      new ApiResponse(responseCode = "500", description = "Internal server error"))
+  )
+  def reloadData: Route =
+    path("reloadData") {
+      post {
+        entity(as[ReloadDataRequest]) { request =>
+          val result = loadDataActor.ask(replyTo => ReloadDataRequestRef(request, replyTo))
           complete {
             result.mapTo[LoadDataResponse]
           }
@@ -96,6 +119,6 @@ class LoadData(loadDataActor: ActorRef[LoadDataRequestRef],
     }
 
   def routes: Route = {
-    loadData ~ checkJobState ~ historicalData
+    loadData ~ checkJobState ~ historicalData ~ reloadData
   }
 }

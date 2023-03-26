@@ -8,7 +8,10 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 trait JobRepoIntf {
-  def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID
+
+  def archiveCompletedJobs(): Unit
+
+  def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime, overwrite: Boolean): UUID
 
   def getTickerJobsByStates(jobStatuses: Set[JobStatuses.JobStatus]): Seq[(UUID, TickerJobState)]
 

@@ -17,6 +17,12 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   var signal: EReaderSignal = new EJavaSignal
   var client: EClientSocket = new EClientSocket(this, signal)
 
+  // reconnect attempts
+  var currentWindowEpoch: Long = 0
+  var currentInvalidAttempts = 0
+  var maxReconnectFrequency = 10
+  var maxReconnectFrequencyWindow = 10
+
   //noinspection ConvertNullInitializerToUnderscore
   @volatile
   var reader: EReader = null
@@ -115,7 +121,13 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
       client.eConnect(config.getString("host"),
         config.getString("port").toInt,
         config.getString("clientId").toInt)
+      // here we will have 502 error if we are not able to connect, serverVersion will be 0
       logger.debug(s"Server version: ${client.serverVersion()}")
+      if (client.serverVersion() == 0) {
+        // we are not connected and cannot connect
+        logger.error("serverVersion is 0, meaning we could not connect")
+        return
+      }
       readerMonitor.synchronized {
         reader = new EReader(client, signal)
         reader.start()
@@ -134,6 +146,15 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   }
 
   def checkConnected(): Unit = {
+    if (currentInvalidAttempts > maxReconnectFrequency) {
+      return
+    } else {
+      val epoch = LocalDateTimeUtil.toEpoch(LocalDateTimeUtil.now())
+      if (epoch > currentWindowEpoch + maxReconnectFrequencyWindow) {
+        currentWindowEpoch = epoch
+        currentInvalidAttempts = 0
+      }
+    }
     try {
       //drop isConnected if discover not connected
       dropIsConnectedFlagIfClientNotConnected()
@@ -148,6 +169,9 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
             logger.debug("still not connected")
             //not connected
             connect()
+            if (isConnected.get() == 0) {
+              currentInvalidAttempts += 1
+            }
           }
         }
       }
@@ -168,6 +192,10 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
                          cont: ClientOperationHandlers.HistoricalDataOperationCallback,
                          error: ClientOperationHandlers.ErrorHandler): Unit = {
     checkConnected()
+    if (isConnected.get() == 0) {
+      error(TWSClientErrors.COULD_NOT_CONNECT, "Could not connect", null)
+      return
+    }
 
     val contract = ContractConverter.getContract(ticker, exchange, typ)
     val reqN = sequence.getAndIncrement()

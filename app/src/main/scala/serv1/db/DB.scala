@@ -50,6 +50,7 @@ object DB extends Logging {
     upgradeDatabaseVersionIfNeeded()
 
     val tables = List(JobTable.query,
+      JobTable.archiveQuery,
       TickerTypeTable.query,
       ScheduledTaskTable.query,
       TickerDataErrorsTable.query,

@@ -37,7 +37,7 @@ object RestServer extends RouteConcatenation {
     val tickerDataActor = ctx.spawn(TickerDataActor(TickerDataRepo), name = "tickerDataActor", databaseDispatcherSelector)
     val tickerJobService = new TickerJobService(MultiClient, JobRepo, tickerDataActor)
     val tickerActorRef = ctx.spawn(TickerJobActor(tickerJobService, JobRepo), "tickerJobActor")
-    val loadService = new LoadService(tickerActorRef)
+    val loadService = new LoadService(TickerDataRepo, tickerActorRef)
     val loadDataActorRef = ctx.spawn(LoadDataActor(loadService), "loadDataActor")
     val checkJobActorRef = ctx.spawn(CheckLoadJobStateActor(loadService), "checkJobStateActor")
     val tickerJobControlActorRef = ctx.spawn(TickerJobControlActor(ScheduledTaskRepo, TickerTrackingRepo, TickerTypeRepo), "tickerJobControlActor")

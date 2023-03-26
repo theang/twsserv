@@ -77,6 +77,39 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
     }
   }
 
+  def writeUpdate(ticker: TickerLoadType, data: Seq[HistoricalData]): Unit = {
+    createTableIfNotExists(ticker)
+
+    val tickerDataTable = new TickerDataTableGen(ticker)
+    val tableQueryDelete = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.time inSet data.map(_.timestamp))
+    Await.result(DB.db.run(tableQueryDelete.delete.asTry), timeout) match {
+      case Success(res) =>
+        logger.debug(s"Delete result: $res")
+      case Failure(ex) =>
+        logger.error("Delete failed", ex)
+        throw new DatabaseException(cause = ex)
+    }
+
+    val tableQuery = TickerDataTable.getQuery(ticker)
+    val listToInsert = data.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol) })
+    val action = tableQuery ++= listToInsert
+    Await.result(DB.db.run(action.asTry), timeout) match {
+      case Success(Some(insertedRows)) =>
+        if (listToInsert.size != insertedRows) {
+          val msg = s"Insert failed: (toInsert) ${listToInsert.size} != (inserted) $insertedRows"
+          logger.error(msg)
+          throw new DatabaseException(message = msg)
+        }
+      case Success(None) =>
+        val msg = s"Insert returned None"
+        logger.error(msg)
+        throw new DatabaseException(message = msg)
+      case Failure(ex) =>
+        logger.error(s"Insert has exception", ex)
+        throw new DatabaseException(cause = ex)
+    }
+  }
+
   def read(ticker: TickerLoadType): Seq[HistoricalData] = {
     createTableIfNotExists(ticker)
     val tickerDataTable = new TickerDataTableGen(ticker)
@@ -102,6 +135,13 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
     createTableIfNotExists(ticker)
     val tickerDataTable = new TickerDataTableGen(ticker)
     val tableQuery = TableQuery[tickerDataTable.TickerDataTable].map(_.time).max
+    Await.result(DB.db.run(tableQuery.result), Duration.Inf)
+  }
+
+  def earliestDate(ticker: TickerLoadType): Option[Long] = {
+    createTableIfNotExists(ticker)
+    val tickerDataTable = new TickerDataTableGen(ticker)
+    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].map(_.time).min
     Await.result(DB.db.run(tableQuery.result), Duration.Inf)
   }
 

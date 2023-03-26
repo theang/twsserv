@@ -8,7 +8,7 @@ import serv1.model.job.JobStatuses
 import serv1.model.ticker.BarSizes.BarSize
 import serv1.model.ticker.{BarSizes, TickerError, TickerLoadType, TickerType}
 import serv1.rest.historical.HistoricalDataActor.{HistoricalDataResponse, HistoricalDataValues}
-import serv1.rest.loaddata.LoadDataActor.{LoadDataRequest, LoadDataResponse, LoadPeriod}
+import serv1.rest.loaddata.LoadDataActor._
 import serv1.rest.schedule.ScheduleActor._
 import serv1.rest.ticker.TickerJobControlActor.{AddTickersTrackingRequest, GetStatusRequest, RemoveTickersTrackingRequest, TickersTrackingResponse}
 import serv1.util.LocalDateTimeUtil
@@ -65,6 +65,7 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val tickerErrorFormat: RootJsonFormat[TickerError] = jsonFormat2(TickerError)
   implicit val loadPeriodFormat: RootJsonFormat[LoadPeriod] = jsonFormat2(LoadPeriod)
   implicit val loadDataRequestFormat: RootJsonFormat[LoadDataRequest] = jsonFormat2(LoadDataRequest)
+  implicit val reloadDataRequestFormat: RootJsonFormat[ReloadDataRequest] = jsonFormat1(ReloadDataRequest)
 
   implicit val historicalDataFormat: RootJsonFormat[HistoricalData] = jsonFormat6(HistoricalData)
 
@@ -78,6 +79,7 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
   }
 
   implicit val loadDataResponseFormat: RootJsonFormat[LoadDataResponse] = jsonFormat1(LoadDataResponse) // contains List[Item]
+  implicit val loadDataResponsesFormat: RootJsonFormat[LoadDataResponses] = jsonFormat1(LoadDataResponses)
 
   implicit object JobStatusJsonFormat extends RootJsonFormat[JobStatuses.JobStatus] {
     override def write(obj: JobStatuses.JobStatus): JsString = JsString(obj.toString)
@@ -101,20 +103,22 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
       "loadedTickers" -> obj.loadedTickers.toJson,
       "ignoredTickers" -> obj.ignoredTickers.toJson,
       "from" -> obj.from.toJson,
-      "to" -> obj.to.toJson
+      "to" -> obj.to.toJson,
+      "overwrite" -> obj.overwrite.toJson
     )
 
     override def read(json: JsValue): TickerJobState = {
-      List("status", "tickers", "errors", "loadedTickers", "ignoredTickers", "from", "to")
+      List("status", "tickers", "errors", "loadedTickers", "ignoredTickers", "from", "to", "overwrite")
         .map(json.asJsObject.fields.get) match {
-        case Seq(status, tickers, errors, loadedTickers, ignoredTickers, from, to) =>
+        case Seq(status, tickers, errors, loadedTickers, ignoredTickers, from, to, overwrite) =>
           TickerJobState(status.get.convertTo[JobStatuses.JobStatus],
             tickers.get.convertTo[List[TickerLoadType]],
             loadedTickers.fold(List[TickerLoadType]())(_.convertTo[List[TickerLoadType]]),
             ignoredTickers.fold(List[TickerLoadType]())(_.convertTo[List[TickerLoadType]]),
             errors.fold(List[TickerError]())(_.convertTo[List[TickerError]]),
             from.get.convertTo[LocalDateTime],
-            to.get.convertTo[LocalDateTime]
+            to.get.convertTo[LocalDateTime],
+            overwrite.exists(_.convertTo[Boolean])
           )
       }
     }

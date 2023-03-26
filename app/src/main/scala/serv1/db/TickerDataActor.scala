@@ -33,6 +33,7 @@ object TickerDataActor extends Logging {
   case class Write(attempt: Int,
                    ticker: TickerLoadType,
                    historicalData: Seq[HistoricalData],
+                   overwrite: Boolean,
                    replyTo: ActorRef[ResultMessage]) extends Message
 
   case class Retry(attempt: Int,
@@ -52,6 +53,7 @@ object TickerDataActor extends Logging {
                     attempt: Int,
                     ticker: TickerLoadType,
                     historicalData: Seq[HistoricalData],
+                    overwrite: Boolean,
                     replyTo: ActorRef[ResultMessage]): Unit = {
     if (attempt > MAX_ATTEMPTS) {
       logger.warn(s"Giving up for $ticker loading ${historicalData.size} items of historical data")
@@ -61,14 +63,18 @@ object TickerDataActor extends Logging {
     } else {
       try {
         logger.info(s"Blocking write $ticker")
-        tickerDataRepo.write(ticker, historicalData)
+        if (overwrite) {
+          tickerDataRepo.writeUpdate(ticker, historicalData)
+        } else {
+          tickerDataRepo.write(ticker, historicalData)
+        }
         if (replyTo != null) {
           replyTo ! WriteSuccessful
         }
       } catch {
         case _: DatabaseException =>
           logger.info(s"Blocking write unsuccessful $ticker starting timer")
-          timers.startSingleTimer(timerKey, Write(attempt + 1, ticker, historicalData, replyTo), calculateRandomDelay())
+          timers.startSingleTimer(timerKey, Write(attempt + 1, ticker, historicalData, overwrite, replyTo), calculateRandomDelay())
       }
     }
   }
@@ -76,7 +82,7 @@ object TickerDataActor extends Logging {
   def apply(tickerDataRepo: TickerDataRepoIntf): Behavior[Message] = {
     Behaviors.withTimers { timers =>
       Behaviors.receive[Message] {
-        case (context, Write(attempt, ticker, historicalData, replyTo)) =>
+        case (context, Write(attempt, ticker, historicalData, overwrite, replyTo)) =>
           blockingWrite(tickerDataRepo,
             context,
             timers,
@@ -84,6 +90,7 @@ object TickerDataActor extends Logging {
             attempt,
             ticker,
             historicalData,
+            overwrite,
             replyTo)
           Behaviors.same
         case (context, Retry(attempt, description, action, replyTo)) =>
