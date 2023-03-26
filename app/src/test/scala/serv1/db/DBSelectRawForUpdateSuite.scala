@@ -26,7 +26,7 @@ class DBSelectRawForUpdateSuite extends AnyFunSuite with JsonFormats with Loggin
   test("Write lock on row should be successfully execute when no lock is acquired") {
     JobRepo.removeJob(null)
     assert(JobRepo.getTickerJobStates(null).size === 0)
-    val id = JobRepo.createTickerJob(testTickers, from, to)
+    val id = JobRepo.createTickerJob(testTickers, from, to, overwrite = false)
     val result = JobRepo.updateJob(id, testTicker2, Some("test"), ignore = false)
     assert(result)
     (() => {
@@ -36,6 +36,7 @@ class DBSelectRawForUpdateSuite extends AnyFunSuite with JsonFormats with Loggin
         job.loadedTickers.isEmpty === true
         job.errors === List(TickerError(testTicker2, "test"))
         job.tickers === testTickers
+        job.overwrite === false
       }
     })()
     JobRepo.removeJob(id)
@@ -44,7 +45,7 @@ class DBSelectRawForUpdateSuite extends AnyFunSuite with JsonFormats with Loggin
   test("Write lock on row should not be successfully execute when a lock is acquired") {
     JobRepo.removeJob(null)
     assert(JobRepo.getTickerJobStates(null).size === 0)
-    val id = JobRepo.createTickerJob(testTickers, from, to)
+    val id = JobRepo.createTickerJob(testTickers, from, to, overwrite = false)
     val latch = new CountDownLatch(1)
     val latch2 = new CountDownLatch(1)
     val locking = new Thread() {

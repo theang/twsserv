@@ -24,11 +24,27 @@ object JobRepo extends JsonFormats with JobRepoIntf with Logging {
 
   var waitLockDurationSec: Int = Configuration.INITIAL_JOB_REPO_WAIT_LOCK_DURATION
 
-  def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime): UUID = {
+  def archiveJob(id: UUID, tickerJobState: TickerJobState): Int = {
+    Await.result(DB.db.run(JobTable.archiveQuery += Job(id, tickerJobState.asInstanceOf[JobState].toJson.prettyPrint)), Duration.Inf)
+    Await.result(DB.db.run(JobTable.query.filter(_.jobId === id).delete), Duration.Inf)
+  }
+
+  def archiveCompletedJobs(): Unit = {
+    getTickerJobs(null).filter {
+      case (id, tickerJobState) =>
+        tickerJobState.status == JobStatuses.FINISHED
+      case _ => false
+    }.foreach {
+      case (id, tickerJobState) =>
+        archiveJob(id, tickerJobState)
+    }
+  }
+
+  def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime, overwrite: Boolean): UUID = {
     val id = UUID.randomUUID()
     Await.result(DB.db.run(DBIO.seq(JobTable.query += Job(id,
       TickerJobState(JobStatuses.IN_PROGRESS,
-        tickers = tickersToLoad.toList, List.empty, List.empty, List.empty, from, to).asInstanceOf[JobState].toJson.prettyPrint))), Duration.Inf)
+        tickers = tickersToLoad.toList, List.empty, List.empty, List.empty, from, to, overwrite).asInstanceOf[JobState].toJson.prettyPrint))), Duration.Inf)
     id
   }
 

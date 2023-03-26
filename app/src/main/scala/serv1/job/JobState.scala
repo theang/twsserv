@@ -13,4 +13,5 @@ case class TickerJobState(status: JobStatus,
                           ignoredTickers: List[TickerLoadType],
                           errors: List[TickerError],
                           from: LocalDateTime,
-                          to: LocalDateTime) extends JobState
+                          to: LocalDateTime,
+                          overwrite: Boolean) extends JobState

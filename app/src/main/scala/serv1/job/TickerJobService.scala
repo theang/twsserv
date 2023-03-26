@@ -40,9 +40,9 @@ class TickerJobService(client: DataClient,
     tickerDataActor ! Retry(0, s"Updating job $jobId for $ticker error $error ignore $ignore", () => updateJob(jobId, ticker, error, ignore), null)
   }
 
-  def saveHistoricalData(jobId: UUID, ticker: TickerLoadType, data: Seq[HistoricalData], last: Boolean): Unit = {
+  def saveHistoricalData(jobId: UUID, ticker: TickerLoadType, data: Seq[HistoricalData], overwrite: Boolean, last: Boolean): Unit = {
     logger.info(s"writing ${data.size} $ticker $last")
-    tickerDataActor ! Write(1, ticker = ticker, historicalData = data, replyTo = null)
+    tickerDataActor ! Write(1, ticker = ticker, historicalData = data, overwrite = overwrite, replyTo = null)
     if (last) {
       updateJobWithRetry(jobId, ticker, Option.empty, ignore = false)
     }
@@ -55,6 +55,7 @@ class TickerJobService(client: DataClient,
   }
 
   def loadTicker(jobId: UUID, ticker: TickerLoadType, from: LocalDateTime, to: LocalDateTime): Unit = {
+    val overwrite = jobRepo.getTickerJobStates(jobId).head.overwrite
     client.loadHistoricalData(LocalDateTimeUtil.toEpoch(from),
       LocalDateTimeUtil.toEpoch(to),
       ticker.tickerType.name,
@@ -62,7 +63,7 @@ class TickerJobService(client: DataClient,
       ticker.tickerType.typ,
       BarSizeConverter.getBarSizeSeconds(ticker.barSize),
       ticker.tickerType.prec,
-      (data: Seq[HistoricalData], last: Boolean) => saveHistoricalData(jobId, ticker, data, last),
+      (data: Seq[HistoricalData], last: Boolean) => saveHistoricalData(jobId, ticker, data, overwrite, last),
       (code: Int, msg: String, advancedOrderRejectJson: String) => errorCallback(jobId, ticker, code, msg, advancedOrderRejectJson))
   }
 

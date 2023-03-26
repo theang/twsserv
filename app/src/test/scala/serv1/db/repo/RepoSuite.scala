@@ -15,7 +15,7 @@ import serv1.util.LocalDateTimeUtil
 class RepoSuite extends AnyFunSuite {
   test("JobRepo test, create job, update job, check job is complete") {
     assert(JobRepo.getTickerJobStates(null).size === 0)
-    val id = JobRepo.createTickerJob(testTickers, from, to)
+    val id = JobRepo.createTickerJob(testTickers, from, to, overwrite = false)
     assert(JobRepo.getTickerJobStates(id).size === 1)
     (() => {
       val job = JobRepo.getTickerJobStates(id).head
@@ -23,6 +23,7 @@ class RepoSuite extends AnyFunSuite {
         job.status === JobStatuses.IN_PROGRESS
         job.loadedTickers.isEmpty === true
         job.tickers === testTickers
+        job.overwrite === false
       }
     })()
     JobRepo.updateJob(id, testTicker)
@@ -32,6 +33,7 @@ class RepoSuite extends AnyFunSuite {
         job.status === JobStatuses.IN_PROGRESS
         job.loadedTickers.isEmpty === List(testTicker)
         job.tickers === List(testTicker2)
+        job.overwrite === false
       }
     })()
     JobRepo.updateJob(id, testTicker2)
@@ -41,6 +43,7 @@ class RepoSuite extends AnyFunSuite {
         job.status === JobStatuses.FINISHED
         job.loadedTickers.isEmpty === testTickers
         job.tickers.isEmpty === true
+        job.overwrite === false
       }
     })()
     JobRepo.removeJob(id)
@@ -48,7 +51,7 @@ class RepoSuite extends AnyFunSuite {
 
   test("JobRepo error test, create job, update with error, test result") {
     assert(JobRepo.getTickerJobStates(null).size === 0)
-    val id = JobRepo.createTickerJob(testTickers, from, to)
+    val id = JobRepo.createTickerJob(testTickers, from, to, overwrite = false)
     JobRepo.updateJob(id, testTicker2, Some("test"), ignore = false)
     (() => {
       val job = JobRepo.getTickerJobStates(id).head
@@ -57,6 +60,7 @@ class RepoSuite extends AnyFunSuite {
         job.loadedTickers.isEmpty === true
         job.errors === List(TickerError(testTicker2, "test"))
         job.tickers === List(testTicker)
+        job.overwrite === false
       }
     })()
     JobRepo.removeJob(id)

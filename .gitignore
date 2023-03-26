@@ -4,9 +4,12 @@
 # Ignore Gradle build output directory
 build
 
+upload
+security
 secrets.yaml
 
 data/db/**
+data/*.xz
 !data/db/.gitkeep
 
 libs/**
