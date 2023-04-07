@@ -1,6 +1,7 @@
 package serv1.job
 
 import serv1.Configuration.INITIAL_TICKER_TRACKER_SCHEDULED_TASKS_ENABLED
+import serv1.client.converters.BarSizeConverter
 import serv1.db.repo.intf.{ScheduledTaskRepoIntf, TickerDataRepoIntf, TickerTrackingRepoIntf, TickerTypeRepoIntf}
 import serv1.model.ticker.BarSizes.{BarSize, DAY, HOUR, MIN15}
 import serv1.rest.loaddata.LoadService
@@ -32,6 +33,12 @@ class TickerTrackerJobService(loadService: LoadService,
     LocalDateTimeUtil.toEpoch(result)
   }
 
+  def roundEpochByBar(barSize: BarSize, epoch: Long): Long = {
+    val barSizeSeconds = BarSizeConverter.getBarSizeSeconds(barSize)
+    val reminder = epoch % barSizeSeconds
+    epoch - reminder
+  }
+
   def runTrackingJob(currentEpoch: Long, taskName: String, taskId: Int): Unit = {
     val tickers = tickerTypeRepoIntf.queryTickers(
       tickerTrackingRepoIntf.findTickerTracking(taskId))
@@ -39,13 +46,13 @@ class TickerTrackerJobService(loadService: LoadService,
       val from = tickerDataRepoIntf.latestDate(ticker).getOrElse({
         defaultLoadPeriods(ticker.barSize, currentEpoch)
       })
-      from
+      roundEpochByBar(ticker.barSize, from) - BarSizeConverter.getBarSizeSeconds(ticker.barSize)
     }).foreach { case (from, tickers) =>
       logger.info(s"$taskName : running $tickers from $from")
       loadService.load(tickers,
         LocalDateTimeUtil.fromEpoch(from),
         LocalDateTimeUtil.fromEpoch(currentEpoch),
-        overwrite = false)
+        overwrite = true)
     }
   }
 
