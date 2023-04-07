@@ -66,7 +66,7 @@ class LoadData(loadDataActor: ActorRef[Message],
         entity(as[ReloadDataRequest]) { request =>
           val result = loadDataActor.ask(replyTo => ReloadDataRequestRef(request, replyTo))
           complete {
-            result.mapTo[LoadDataResponse]
+            result.mapTo[LoadDataResponses]
           }
         }
       }
