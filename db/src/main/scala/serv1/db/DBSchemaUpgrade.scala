@@ -1,7 +1,6 @@
 package serv1.db
 
 import org.snakeyaml.engine.v2.api.{Load, LoadSettings}
-import serv1.Configuration
 
 import java.util
 import scala.collection.mutable

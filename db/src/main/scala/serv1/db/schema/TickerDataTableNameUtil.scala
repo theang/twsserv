@@ -1,6 +1,6 @@
 package serv1.db.schema
 
-import serv1.Configuration
+import serv1.db.Configuration
 import serv1.model.ticker.{BarSizes, TickerLoadType, TickerType}
 
 import scala.util.matching.Regex

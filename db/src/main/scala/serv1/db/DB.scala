@@ -1,6 +1,5 @@
 package serv1.db
 
-import serv1.Configuration
 import serv1.db.repo.impl.ConfigRepo
 import serv1.db.schema._
 import slick.jdbc.PostgresProfile.api._

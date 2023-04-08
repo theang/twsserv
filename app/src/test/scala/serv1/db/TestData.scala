@@ -1,8 +1,7 @@
 package serv1.db
 
-import serv1.job.TickerJobState
 import serv1.model.HistoricalData
-import serv1.model.job.JobStatuses
+import serv1.model.job.{JobStatuses, TickerJobState}
 import serv1.model.ticker.{BarSizes, TickerLoadType, TickerType}
 import serv1.util.LocalDateTimeUtil
 

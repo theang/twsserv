@@ -2,7 +2,7 @@ package serv1.rest.loaddata
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import serv1.job.TickerJobState
+import serv1.model.job.TickerJobState
 
 import java.util.UUID
 

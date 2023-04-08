@@ -4,8 +4,8 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import com.typesafe.config.Config
 import serv1.config.ServConfig
+import serv1.db.exception.DatabaseException
 import serv1.db.repo.intf.TickerDataRepoIntf
-import serv1.exception.DatabaseException
 import serv1.model.HistoricalData
 import serv1.model.ticker.TickerLoadType
 import slick.util.Logging

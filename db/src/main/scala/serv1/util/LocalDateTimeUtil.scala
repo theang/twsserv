@@ -1,7 +1,7 @@
 package serv1.util
 
-import java.time.format.DateTimeFormatter
 import java.time._
+import java.time.format.DateTimeFormatter
 
 object LocalDateTimeUtil {
   private val ISODateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME

@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.{Consumes, POST, Path, Produces}
-import serv1.job.TickerJobState
+import serv1.model.job.TickerJobState
 import serv1.rest.JsonFormats
 import serv1.rest.historical.HistoricalDataActor.{HistoricalDataRequest, HistoricalDataResponse}
 import serv1.rest.loaddata.CheckLoadJobStateActor.CheckLoadJobRef
