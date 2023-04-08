@@ -11,7 +11,7 @@ import serv1.model.job.JobStatuses
 import slick.util.Logging
 
 import scala.concurrent.Await
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration._
 
 object RestartLoadActor extends Logging {
   val DELAY: FiniteDuration = 10.seconds

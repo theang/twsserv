@@ -1,4 +1,4 @@
-package serv1.job
+package serv1.model.job
 
 import serv1.model.job.JobStatuses.JobStatus
 import serv1.model.ticker.{TickerError, TickerLoadType}

@@ -20,3 +20,10 @@ logs/**
 
 .idea
 
+.sbt
+
+# sbt
+project/project/
+project/target/
+target/
+

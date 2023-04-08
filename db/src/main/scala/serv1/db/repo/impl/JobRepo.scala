@@ -1,14 +1,11 @@
 package serv1.db.repo.impl
 
-import serv1.Configuration
 import serv1.db.DBSelectRawForUpdate.{AlreadyLocked, NothingToLock, Success}
 import serv1.db.repo.intf.JobRepoIntf
 import serv1.db.schema.{Job, JobTable}
-import serv1.db.{DB, DBSelectRawForUpdate}
-import serv1.job.{JobState, TickerJobState}
-import serv1.model.job.JobStatuses
+import serv1.db.{Configuration, DB, DBJsonFormats, DBSelectRawForUpdate}
+import serv1.model.job.{JobState, JobStatuses, TickerJobState}
 import serv1.model.ticker.{TickerError, TickerLoadType}
-import serv1.rest.JsonFormats
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.util.Logging
@@ -20,7 +17,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-object JobRepo extends JsonFormats with JobRepoIntf with Logging {
+object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
 
   var waitLockDurationSec: Int = Configuration.INITIAL_JOB_REPO_WAIT_LOCK_DURATION
 

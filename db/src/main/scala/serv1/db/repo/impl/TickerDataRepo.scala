@@ -2,9 +2,9 @@ package serv1.db.repo.impl
 
 import serv1.db.DB
 import serv1.db.DB.db
+import serv1.db.exception.DatabaseException
 import serv1.db.repo.intf.TickerDataRepoIntf
 import serv1.db.schema.{TickerData, TickerDataTable, TickerDataTableGen, TickerDataTableNameUtil}
-import serv1.exception.DatabaseException
 import serv1.model.HistoricalData
 import serv1.model.ticker.TickerLoadType
 import slick.jdbc.PostgresProfile.api._
@@ -14,7 +14,7 @@ import slick.util.Logging
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.concurrent
 import scala.concurrent.Await
-import scala.concurrent.duration.{Duration, FiniteDuration, _}
+import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 import scala.util.{Failure, Success}

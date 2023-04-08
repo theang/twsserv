@@ -5,7 +5,8 @@ import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import serv1.db.repo.impl.JobRepo
 import serv1.db.repo.intf.TickerDataRepoIntf
-import serv1.job.{TickerJobActor, TickerJobState}
+import serv1.job.TickerJobActor
+import serv1.model.job.TickerJobState
 import serv1.model.ticker.TickerLoadType
 import serv1.rest.JsonFormats
 import serv1.util.LocalDateTimeUtil

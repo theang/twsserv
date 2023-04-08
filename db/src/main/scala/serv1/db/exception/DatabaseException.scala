@@ -1,4 +1,4 @@
-package serv1.exception
+package serv1.db.exception
 
 class DatabaseException(message: String = null, cause: Throwable = null)
   extends RuntimeException(DatabaseException.defaultMessage(message, cause), cause)
