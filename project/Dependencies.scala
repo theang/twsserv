@@ -6,6 +6,7 @@ object Dependencies {
   val akkaHttpVersion = "10.2.9"
   val akkaVersion = "2.7.0"
   val swaggerVersion = "2.2.1"
+  val zioVersion = "2.0.11"
 
   val commonDependencies: Seq[ModuleID] = Seq(
     // Use Scala 2.13 in our library project
@@ -52,5 +53,10 @@ object Dependencies {
     "ch.qos.logback" % "logback-classic" % "1.4.5",
 
     "org.snakeyaml" % "snakeyaml-engine" % "2.6-SNAPSHOT"
+  )
+
+  val zioDependencies: Seq[ModuleID] = Seq(
+    "dev.zio" %% "zio" % s"$zioVersion",
+    "dev.zio" %% "zio-streams" % s"$zioVersion"
   )
 }

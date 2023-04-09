@@ -18,3 +18,10 @@ lazy val app = (project in file("app"))
     libraryDependencies ++= commonDependencies,
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   ).dependsOn(db)
+
+lazy val backend = (project in file("backend"))
+  .settings(
+    name := "backend",
+    Compile / mainClass := Some("serv1.backend.BackendApp"),
+    libraryDependencies ++= zioDependencies
+  ).dependsOn(db)

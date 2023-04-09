@@ -8,7 +8,11 @@ import scala.util.matching.Regex
 object TickerDataTableNameUtil {
   def formatTableName(tt: TickerLoadType): String = s"TD_${tt.tickerType.exchange}_${tt.tickerType.typ}_${tt.tickerType.name}_${tt.barSize}"
 
+  def formatTickTableName(tt: TickerLoadType, tickType: String): String = s"TD_${tt.tickerType.exchange}_${tt.tickerType.typ}_${tt.tickerType.name}_${tt.barSize}_$typ"
+
   val tableNameRegex: Regex = "^TD_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)$".r
+
+  val tickTableNameRegex: Regex = "^TD_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_(LAST|BIDASK)$".r
 
   def parseTableName(name: String): Option[TickerLoadType] = name match {
     case tableNameRegex(exchange, typ, name, barSizeStr) =>
