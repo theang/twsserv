@@ -6,7 +6,7 @@ import serv1.db.exception.DatabaseException
 import serv1.db.repo.intf.TickerDataRepoIntf
 import serv1.db.schema.{TickerData, TickerDataTable, TickerDataTableGen, TickerDataTableNameUtil}
 import serv1.model.HistoricalData
-import serv1.model.ticker.TickerLoadType
+import serv1.model.ticker.{BarSizes, TickerLoadType}
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.meta.MTable
 import slick.util.Logging
@@ -19,8 +19,8 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
-object TickerDataRepo extends TickerDataRepoIntf with Logging {
-  val timeout: FiniteDuration = 5.second
+object TickerDataRepo extends TickerDataRepoIntf with Logging with BaseRepo {
+  var timeout: FiniteDuration = 5.second
   private val createdTables: concurrent.Map[TickerLoadType, Boolean] =
     new ConcurrentHashMap[TickerLoadType, Boolean]().asScala
 
@@ -37,6 +37,9 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
   }
 
   def createTableIfNotExists(ticker: TickerLoadType): Unit = {
+    if (ticker.barSize == BarSizes.TICK) {
+      throw new DatabaseException("You cant create tick table, create TickLast and TickBidAsk instead, using TickerTick repo")
+    }
     val tableQuery = TickerDataTable.getQuery(ticker)
     if (!createdTables.contains(ticker)) {
       val dbTables = Await.result(db.run(MTable.getTables), Duration.Inf).map(_.name.name)
@@ -50,6 +53,9 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
   }
 
   def write(ticker: TickerLoadType, data: Seq[HistoricalData]): Unit = {
+    if (ticker.barSize == BarSizes.TICK) {
+      throw new DatabaseException("You cant write tick table using TickerDataRepo, use TickerTick repo")
+    }
     createTableIfNotExists(ticker)
 
     val tickerDataTable = new TickerDataTableGen(ticker)
@@ -60,24 +66,13 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
       !timesAlreadyInTable.contains(hd.timestamp)
     }.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol) })
     val action = tableQuery ++= listToInsert
-    Await.result(DB.db.run(action.asTry), timeout) match {
-      case Success(Some(insertedRows)) =>
-        if (listToInsert.size != insertedRows) {
-          val msg = s"Insert failed: (toInsert) ${listToInsert.size} != (inserted) $insertedRows"
-          logger.error(msg)
-          throw new DatabaseException(message = msg)
-        }
-      case Success(None) =>
-        val msg = s"Insert returned None"
-        logger.error(msg)
-        throw new DatabaseException(message = msg)
-      case Failure(ex) =>
-        logger.error(s"Insert has exception", ex)
-        throw new DatabaseException(cause = ex)
-    }
+    writeWithCheck(listToInsert.size, action, timeout)
   }
 
   def writeUpdate(ticker: TickerLoadType, data: Seq[HistoricalData]): Unit = {
+    if (ticker.barSize == BarSizes.TICK) {
+      throw new DatabaseException("You cant write tick table using TickerDataRepo, use TickerTick repo")
+    }
     createTableIfNotExists(ticker)
 
     val tickerDataTable = new TickerDataTableGen(ticker)
@@ -93,24 +88,13 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
     val tableQuery = TickerDataTable.getQuery(ticker)
     val listToInsert = data.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol) })
     val action = tableQuery ++= listToInsert
-    Await.result(DB.db.run(action.asTry), timeout) match {
-      case Success(Some(insertedRows)) =>
-        if (listToInsert.size != insertedRows) {
-          val msg = s"Insert failed: (toInsert) ${listToInsert.size} != (inserted) $insertedRows"
-          logger.error(msg)
-          throw new DatabaseException(message = msg)
-        }
-      case Success(None) =>
-        val msg = s"Insert returned None"
-        logger.error(msg)
-        throw new DatabaseException(message = msg)
-      case Failure(ex) =>
-        logger.error(s"Insert has exception", ex)
-        throw new DatabaseException(cause = ex)
-    }
+    writeWithCheck(listToInsert.size, action, timeout)
   }
 
   def read(ticker: TickerLoadType): Seq[HistoricalData] = {
+    if (ticker.barSize == BarSizes.TICK) {
+      throw new DatabaseException("You cant read tick table using TickerDataRepo, use TickerTick repo")
+    }
     createTableIfNotExists(ticker)
     val tickerDataTable = new TickerDataTableGen(ticker)
     val tableQuery = TableQuery[tickerDataTable.TickerDataTable]
@@ -121,6 +105,9 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
   }
 
   def readRange(ticker: TickerLoadType, from: Long, to: Long): Seq[HistoricalData] = {
+    if (ticker.barSize == BarSizes.TICK) {
+      throw new DatabaseException("You cant read tick table using TickerDataRepo, use TickerTick repo")
+    }
     createTableIfNotExists(ticker)
     val tickerDataTable = new TickerDataTableGen(ticker)
     val tableQuery = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.time >= from && td.time <= to).sortBy(_.time)
@@ -139,6 +126,9 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
   }
 
   def earliestDate(ticker: TickerLoadType): Option[Long] = {
+    if (ticker.barSize == BarSizes.TICK) {
+      throw new DatabaseException("You cant read tick table using TickerDataRepo, use TickerTick repo")
+    }
     createTableIfNotExists(ticker)
     val tickerDataTable = new TickerDataTableGen(ticker)
     val tableQuery = TableQuery[tickerDataTable.TickerDataTable].map(_.time).min
@@ -146,6 +136,9 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging {
   }
 
   def truncate(ticker: TickerLoadType): Unit = {
+    if (ticker.barSize == BarSizes.TICK) {
+      throw new DatabaseException("You cant truncate tick table using TickerDataRepo, use TickerTick repo")
+    }
     createTableIfNotExists(ticker)
     val tableQuery = TickerDataTable.getQuery(ticker)
     Await.result(DB.db.run(DBIO.seq(tableQuery.delete)), Duration.Inf)

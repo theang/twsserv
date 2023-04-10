@@ -10,7 +10,7 @@ object BackendApp extends ZIOAppDefault {
 
   val myAppLogic: ZIO[Any, IOException, Unit] =
     for {
-      _ <- printLine("Hello! What is your name?")
+      _ <- printLine("What is your name?")
       name <- readLine
       _ <- printLine(s"Hello, $name, welcome to ZIO!")
     } yield ()
