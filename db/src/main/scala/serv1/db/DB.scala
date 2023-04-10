@@ -53,7 +53,8 @@ object DB extends Logging {
       TickerTypeTable.query,
       ScheduledTaskTable.query,
       TickerDataErrorsTable.query,
-      TickerTrackingTable.query
+      TickerTrackingTable.query,
+      ExchangeTable.query
     ).filter(q => !dbTables.contains(q.baseTableRow.tableName))
     val action = for (t <- tables) yield t.schema.createIfNotExists
     Await.result(db.run(DBIO.sequence(action)), Duration.Inf)

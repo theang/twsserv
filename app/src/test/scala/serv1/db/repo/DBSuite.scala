@@ -4,7 +4,7 @@ import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
 import serv1.db.TestData.{TestID, testTickers}
-import serv1.db.repo.impl.{ConfigRepo, TickerDataRepo}
+import serv1.db.repo.impl.{ConfigRepo, ExchangeRepo, TickerDataRepo, TickerTickRepo}
 import serv1.db.schema._
 import serv1.db.{Configuration, DB, DBJsonFormats, TestData}
 import serv1.model.HistoricalData
@@ -106,5 +106,32 @@ class DBSuite extends AnyFunSuite with DBJsonFormats with Logging {
     val testHistoricalData: HistoricalData = testTickerData
     Await.result(DB.db.run(query.filter(td => td.time === 1000L).delete), Duration.Inf)
     assert(historicalData == testHistoricalData)
+  }
+
+  test("try creating exchange records") {
+    DB.createTables()
+    Await.result(DB.db.run(ExchangeTable.query.filter(_.name === "TEST").delete), Duration.Inf)
+    val testExchangeId: Int = ExchangeRepo.getExchangeId("TEST")
+    val actualId = Await.result(DB.db.run(ExchangeTable.query.filter(_.name === "TEST").result), Duration.Inf).head.id
+    assert(testExchangeId == actualId)
+  }
+
+  test("try creating ticker tick records") {
+    DB.createTables()
+    val ticker = TickerTypeDB(0, "TEST", "EXC", "STK", BarSizes.TICK, 2)
+    val tickerType: TickerLoadType = ticker
+    val expectedLast = Seq(TickerTickLast(0, 10, 1.0, 1.0, 1, "A", pastLimit = true, unreported = false))
+    TickerTickRepo.writeLast(tickerType, expectedLast)
+    val expectedBidAsk = Seq(TickerTickBidAsk(0, 10, 1.0, 1.0, 1.0, 1.0, bidPastLow = true, askPastHigh = false))
+    TickerTickRepo.writeBidAsk(tickerType, expectedBidAsk)
+
+    val actualLast = TickerTickRepo.readLast(tickerType, 10, 10).map { l => l.copy(id = 0) }
+    val actualBidAsk = TickerTickRepo.readBidAsk(tickerType, 10, 10).map { ba => ba.copy(id = 0) }
+
+    TickerTickRepo.removeLast(tickerType, 10, 10)
+    TickerTickRepo.removeBidAsk(tickerType, 10, 10)
+
+    assert(actualLast == expectedLast)
+    assert(actualBidAsk == expectedBidAsk)
   }
 }

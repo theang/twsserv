@@ -21,6 +21,7 @@ logs/**
 .idea
 
 .sbt
+.bsp
 
 # sbt
 project/project/
