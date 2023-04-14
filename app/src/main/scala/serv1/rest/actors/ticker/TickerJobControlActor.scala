@@ -1,4 +1,4 @@
-package serv1.rest.ticker
+package serv1.rest.actors.ticker
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}

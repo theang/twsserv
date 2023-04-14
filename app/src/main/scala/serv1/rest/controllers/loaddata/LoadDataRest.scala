@@ -1,4 +1,4 @@
-package serv1.rest.loaddata
+package serv1.rest.controllers.loaddata
 
 import akka.actor.typed.scaladsl.AskPattern.{Askable, schedulerFromActorSystem}
 import akka.actor.typed.{ActorRef, ActorSystem}
@@ -12,17 +12,17 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.{Consumes, POST, Path, Produces}
 import serv1.model.job.TickerJobState
 import serv1.rest.JsonFormats
-import serv1.rest.historical.HistoricalDataActor.{HistoricalDataRequest, HistoricalDataResponse}
-import serv1.rest.loaddata.CheckLoadJobStateActor.CheckLoadJobRef
-import serv1.rest.loaddata.LoadDataActor._
+import serv1.rest.actors.historical.HistoricalDataActor.{HistoricalDataRequest, HistoricalDataResponse}
+import serv1.rest.actors.loaddata.CheckLoadJobStateActor.CheckLoadJobRef
+import serv1.rest.actors.loaddata.LoadDataActor._
 
 import java.util.UUID
 import scala.concurrent.duration._
 
 @Path("loadData")
-class LoadData(loadDataActor: ActorRef[Message],
-               checkLoadJobState: ActorRef[CheckLoadJobRef],
-               historicalDataActor: ActorRef[HistoricalDataRequest])(implicit system: ActorSystem[_])
+class LoadDataRest(loadDataActor: ActorRef[Message],
+                   checkLoadJobState: ActorRef[CheckLoadJobRef],
+                   historicalDataActor: ActorRef[HistoricalDataRequest])(implicit system: ActorSystem[_])
   extends Directives with JsonFormats {
   implicit val timeout: Timeout = 1000.seconds
 

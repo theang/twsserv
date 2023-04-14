@@ -1,4 +1,4 @@
-package serv1.rest.schedule
+package serv1.rest.controllers.schedule
 
 import akka.actor.typed.scaladsl.AskPattern.{Askable, schedulerFromActorSystem}
 import akka.actor.typed.{ActorRef, ActorSystem}
@@ -11,12 +11,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import jakarta.ws.rs._
 import jakarta.ws.rs.core.MediaType
 import serv1.rest.JsonFormats
-import serv1.rest.schedule.ScheduleActor._
+import serv1.rest.actors.schedule.ScheduleActor._
 
 import scala.concurrent.duration._
 
 @Path("/schedule")
-class Schedule(scheduleActor: ActorRef[RequestMessage])(implicit system: ActorSystem[_])
+class ScheduleRest(scheduleActor: ActorRef[RequestMessage])(implicit system: ActorSystem[_])
   extends Directives with JsonFormats {
   implicit val timeout: Timeout = 1000.seconds
 

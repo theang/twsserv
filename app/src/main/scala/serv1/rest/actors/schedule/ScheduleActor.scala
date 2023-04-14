@@ -1,4 +1,4 @@
-package serv1.rest.schedule
+package serv1.rest.actors.schedule
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}

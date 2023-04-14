@@ -3,8 +3,10 @@ package serv1.client
 import com.ib.client._
 import com.typesafe.config.Config
 import serv1.client.converters.{BarSizeConverter, ContractConverter}
-import serv1.client.operations.ClientOperationHandlers
+import serv1.client.model.TickerTickLastExchange
+import serv1.client.operations.{ClientOperationCallbacks, ClientOperationHandlers}
 import serv1.config.ServConfig
+import serv1.db.schema.{TickerTickBidAsk, TickerTickLast}
 import serv1.util.{LocalDateTimeUtil, PowerOperator}
 import slick.util.Logging
 
@@ -16,6 +18,9 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   var config: Config = ServConfig.config.getConfig("twsClient")
   var signal: EReaderSignal = new EJavaSignal
   var client: EClientSocket = new EClientSocket(this, signal)
+
+  val TICK_BY_TICK_DATA_LAST = "Last"
+  val TICK_BY_TICK_DATA_BIDASK = "BidAsk"
 
   // reconnect attempts
   var currentWindowEpoch: Long = 0
@@ -189,7 +194,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
 
 
   def loadHistoricalData(from: Long, to: Long, ticker: String, exchange: String, typ: String, barSize: Int, prec: Int,
-                         cont: ClientOperationHandlers.HistoricalDataOperationCallback,
+                         cont: ClientOperationCallbacks.HistoricalDataOperationCallback,
                          error: ClientOperationHandlers.ErrorHandler): Unit = {
     checkConnected()
     if (isConnected.get() == 0) {
@@ -208,6 +213,35 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
     logger.warn(s"historicalData request: $reqN: $contract, $queryTime, $duration, $barSizeStr")
     ClientOperationHandlers.addHistoricalDataHandler(reqN, 10 ** prec, dateFormat, cont, error)
     client.reqHistoricalData(reqN, contract, queryTime, duration, barSizeStr, "TRADES", 1, dateFormat, false, null)
+  }
+
+  def startLoadingTickData(ticker: String, exchange: String, typ: String,
+                           contLast: ClientOperationCallbacks.TickLastOperationCallback,
+                           contBidAsk: ClientOperationCallbacks.TickBidAskOperationCallback,
+                           error: ClientOperationHandlers.ErrorHandler): (Int, Int) = {
+    checkConnected()
+    if (isConnected.get() == 0) {
+      error(TWSClientErrors.COULD_NOT_CONNECT, "Could not connect", null)
+      return (-1, -1)
+    }
+    val contract = ContractConverter.getContract(ticker, exchange, typ)
+    val reqLastN = sequence.getAndIncrement()
+    val reqBidAskN = sequence.getAndIncrement()
+    logger.warn(s"start Loading Tick data: $reqLastN, $reqBidAskN: $contract")
+    ClientOperationHandlers.addTickLastDataHandler(reqLastN, contLast, error)
+    ClientOperationHandlers.addTickBidAskDataHandler(reqBidAskN, contBidAsk, error)
+    client.reqTickByTickData(reqLastN, contract, TICK_BY_TICK_DATA_LAST, 0, false)
+    client.reqTickByTickData(reqBidAskN, contract, TICK_BY_TICK_DATA_BIDASK, 0, false)
+    (reqLastN, reqBidAskN)
+  }
+
+  def cancelLoadingTickData(reqLastN: Int, reqBidAskN: Int): Unit = {
+    client.cancelTickByTickData(reqLastN)
+    client.cancelTickByTickData(reqBidAskN)
+    ClientOperationHandlers.handleData(reqLastN, null, last = true)
+    ClientOperationHandlers.handleData(reqBidAskN, null, last = true)
+    ClientOperationHandlers.removeHandlers(reqLastN)
+    ClientOperationHandlers.removeHandlers(reqBidAskN)
   }
 
   override def tickPrice(i: Int, i1: Int, v: Double, tickAttrib: TickAttrib): Unit =
@@ -468,11 +502,15 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   override def historicalTicksLast(i: Int, list: util.List[HistoricalTickLast], b: Boolean): Unit =
     logger.debug("historicalTicksLast response")
 
-  override def tickByTickAllLast(i: Int, i1: Int, l: Long, v: Double, i2: Decimal, tickAttribLast: TickAttribLast, s: String, s1: String): Unit =
-    logger.debug("tickByTickAllLast response")
+  override def tickByTickAllLast(i: Int, i1: Int, l: Long, v: Double, i2: Decimal, tickAttribLast: TickAttribLast, s: String, s1: String): Unit = {
+    ClientOperationHandlers.handleData(i, TickerTickLastExchange(TickerTickLast(0, l, v, i2.value().doubleValue(),
+      0, s1, tickAttribLast.pastLimit(), tickAttribLast.unreported()), s), last = false)
+  }
+
 
   override def tickByTickBidAsk(i: Int, l: Long, v: Double, v1: Double, d: Decimal, d1: Decimal, tickAttribBidAsk: TickAttribBidAsk): Unit =
-    logger.debug("tickByTickBidAsk response")
+    ClientOperationHandlers.handleData(i, TickerTickBidAsk(0, l, v, v1, d.value().doubleValue(), d1.value().doubleValue(), tickAttribBidAsk.bidPastLow(),
+      tickAttribBidAsk.askPastHigh()), last = false)
 
   override def tickByTickMidPoint(i: Int, l: Long, v: Double): Unit =
     logger.debug("tickByTickMidPoint response")

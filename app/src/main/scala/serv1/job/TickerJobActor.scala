@@ -3,7 +3,7 @@ package serv1.job
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import serv1.db.repo.intf.JobRepoIntf
-import serv1.model.job.JobStatuses
+import serv1.model.job.{JobStatuses, TickLoadingJobState, TickerJobState}
 import serv1.model.ticker.TickerLoadType
 import slick.util.Logging
 
@@ -28,30 +28,51 @@ object TickerJobActor extends Logging {
 
   var runningJobs: Set[UUID] = Set()
 
-  def apply(ticketJobService: TickerJobService, jobRepo: JobRepoIntf): Behavior[JobActorMessage] = {
+  var tickLoadingClientSeqNumbers: Map[UUID, (Int, Int)] = Map()
+
+  def apply(tickerJobService: TickerJobService, jobRepo: JobRepoIntf): Behavior[JobActorMessage] = {
     Behaviors.receiveMessage[JobActorMessage] {
       case Run(jobId, replyTo) =>
-        val state = jobRepo.getTickerJobStates(jobId).head
-        logger.info(s"Running job: $jobId")
-        if (!runningJobs.contains(jobId) && state.status != JobStatuses.FINISHED) {
-          runningJobs += jobId
-          val state = jobRepo.getTickerJobStates(jobId).head
-          val tickersToProcess: List[TickerLoadType] = (state.tickers diff state.loadedTickers) diff state.ignoredTickers
-          ticketJobService.loadTickers(jobId, tickersToProcess, state.from, state.to)
-          replyTo ! RunSuccessful()
-        } else if (runningJobs.contains(jobId)) {
+        if (runningJobs.contains(jobId)) {
           logger.warn(s"JobId $jobId is already running by this Actor")
         } else {
-          logger.warn(s"JobId $jobId state is Finished, to start it it needs to be in ERROR or IN_PROGRESS state")
+          jobRepo.getJobStates(jobId) match {
+            case Seq((_, state: TickerJobState)) =>
+              logger.info(s"Running job: $jobId")
+              if (!runningJobs.contains(jobId) && state.status != JobStatuses.FINISHED) {
+                runningJobs += jobId
+                val tickersToProcess: List[TickerLoadType] = (state.tickers diff state.loadedTickers) diff state.ignoredTickers
+                tickerJobService.loadTickers(jobId, tickersToProcess, state.from, state.to)
+                replyTo ! RunSuccessful()
+              } else {
+                logger.warn(s"JobId $jobId state is Finished, to start it it needs to be in ERROR or IN_PROGRESS state")
+              }
+            case Seq((_, tickLoadingState: TickLoadingJobState)) =>
+              if (!runningJobs.contains(jobId) && tickLoadingState.status != JobStatuses.FINISHED) {
+                runningJobs += jobId
+                val seqNumbers = tickerJobService.startTickLoading(jobId, tickLoadingState.tickers.head)
+                tickLoadingClientSeqNumbers += jobId -> seqNumbers
+                replyTo ! RunSuccessful()
+              } else {
+                logger.warn(s"JobId $jobId state is Finished, to start it it needs to be in ERROR or IN_PROGRESS state")
+              }
+            case other =>
+              logger.error(s"Job state $other is ignored")
+          }
         }
         Behaviors.same
       case Finished(jobId) =>
         logger.info(s"Job $jobId is finished")
-        val state = jobRepo.getTickerJobStates(jobId).head
+        val (_, state) = jobRepo.getJobStates(jobId).head
         if (!Set(JobStatuses.FINISHED, JobStatuses.ERROR).contains(state.status)) {
           logger.warn(s"Could not finish $jobId because its state is not finished and not error")
         } else {
           runningJobs -= jobId
+          tickLoadingClientSeqNumbers.get(jobId).foreach(reqNumbers => {
+            val (reqTickLast, reqTickBidAsk) = reqNumbers
+            tickerJobService.stopTickLoading(jobId, reqTickLast, reqTickBidAsk)
+            tickLoadingClientSeqNumbers -= jobId
+          })
         }
         Behaviors.same
       case CheckState(jobIds, replyTo) =>

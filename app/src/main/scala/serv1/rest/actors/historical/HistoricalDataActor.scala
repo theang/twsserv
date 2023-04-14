@@ -1,11 +1,11 @@
-package serv1.rest.historical
+package serv1.rest.actors.historical
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import serv1.db.repo.intf.TickerDataRepoIntf
 import serv1.model.HistoricalData
 import serv1.model.ticker.TickerLoadType
-import serv1.rest.loaddata.LoadDataActor.LoadPeriod
+import serv1.rest.actors.loaddata.LoadDataActor.LoadPeriod
 import serv1.util.LocalDateTimeUtil
 
 object HistoricalDataActor {

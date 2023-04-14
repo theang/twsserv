@@ -1,4 +1,4 @@
-package serv1.rest.loaddata
+package serv1.rest.services.loaddata
 
 import akka.actor.typed.scaladsl.AskPattern.{Askable, schedulerFromActorSystem}
 import akka.actor.typed.{ActorRef, ActorSystem}
@@ -17,7 +17,7 @@ import java.util.UUID
 import scala.concurrent.duration._
 
 class LoadService(tickerDataRepoIntf: TickerDataRepoIntf,
-                  tickerJobActorRef: ActorRef[TickerJobActor.Run])(implicit system: ActorSystem[_]) extends JsonFormats with Logging {
+                  tickerJobActorRef: ActorRef[TickerJobActor.JobActorMessage])(implicit system: ActorSystem[_]) extends JsonFormats with Logging {
   implicit val timeout: Timeout = 1000.seconds
 
   def load(ticker: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime, overwrite: Boolean): UUID = {
@@ -52,5 +52,24 @@ class LoadService(tickerDataRepoIntf: TickerDataRepoIntf,
 
   def checkJobStates(id: UUID): List[TickerJobState] = {
     JobRepo.getTickerJobStates(id).toList
+  }
+
+  def startTickLoad(tickers: Seq[TickerLoadType]): Seq[UUID] = {
+    if (tickers.length != 1) {
+      logger.error(s"Only first ticker will be used $tickers")
+    }
+    val jobId = JobRepo.createTickLoadingJob(tickers)
+    tickerJobActorRef.ask(replyTo => TickerJobActor.Run(jobId, replyTo))
+    Seq(jobId)
+  }
+
+  def stopTickLoad(tickers: Seq[TickerLoadType]): Boolean = {
+    if (tickers.length != 1) {
+      logger.error(s"Only first ticker will be used $tickers")
+    }
+    JobRepo.findTickLoadingJobByLoadType(tickers.head).map { id =>
+      JobRepo.cancelTickLoadingJob(id)
+      tickerJobActorRef ! TickerJobActor.Finished(id)
+    }.nonEmpty
   }
 }

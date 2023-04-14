@@ -6,13 +6,18 @@ import org.scalatestplus.junit.JUnitRunner
 import serv1.db.DB
 import serv1.db.TestData._
 import serv1.db.repo.impl._
-import serv1.db.schema.{ScheduledTask, TickerDataErrors}
-import serv1.model.job.JobStatuses
+import serv1.db.schema.{ExchangeTable, ScheduledTask, TickerDataErrors}
+import serv1.model.job.{JobStatuses, TickLoadingJobState}
 import serv1.model.ticker.TickerError
 import serv1.util.LocalDateTimeUtil
+import slick.jdbc.PostgresProfile.api._
+import slick.util.Logging
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 @RunWith(classOf[JUnitRunner])
-class RepoSuite extends AnyFunSuite {
+class RepoSuite extends AnyFunSuite with Logging {
   test("JobRepo test, create job, update job, check job is complete") {
     assert(JobRepo.getTickerJobStates(null).size === 0)
     val id = JobRepo.createTickerJob(testTickers, from, to, overwrite = false)
@@ -44,6 +49,39 @@ class RepoSuite extends AnyFunSuite {
         job.loadedTickers.isEmpty === testTickers
         job.tickers.isEmpty === true
         job.overwrite === false
+      }
+    })()
+    JobRepo.removeJob(id)
+  }
+
+  test("JobRepo TickLoading test, create job, update job, check job is complete") {
+    JobRepo.removeJob(null)
+    assert(JobRepo.getTickerJobs[TickLoadingJobState](null).size === 0)
+    val id = JobRepo.createTickLoadingJob(testTickers)
+    assert(JobRepo.getTickerJobs[TickLoadingJobState](id).size === 1)
+    (() => {
+      val (_, job) = JobRepo.getTickerJobs[TickLoadingJobState](id).head
+      assert {
+        job.status === JobStatuses.IN_PROGRESS
+        job.tickers === testTickers
+      }
+    })()
+    (() => {
+      val ids = JobRepo.findTickLoadingJobByLoadType(testTickers.head)
+      val (_, job) = JobRepo.getTickerJobs[TickLoadingJobState](ids.head).head
+      assert {
+        ids.size === 1
+        ids.head === id
+        job.status === JobStatuses.IN_PROGRESS
+        job.tickers === testTickers
+      }
+    })()
+    JobRepo.cancelTickLoadingJob(id)
+    (() => {
+      val (_, job) = JobRepo.getTickerJobs[TickLoadingJobState](id).head
+      assert {
+        job.status === JobStatuses.FINISHED
+        job.tickers === testTickers
       }
     })()
     JobRepo.removeJob(id)
@@ -150,6 +188,26 @@ class RepoSuite extends AnyFunSuite {
     assert(tasks.size === 0)
   }
 
-  test("Ticker tracking repo tests") {
+  test("Exchange repo tests") {
+    Await.result(DB.db.run(ExchangeTable.query.delete), Duration.Inf)
+
+    val idTest = ExchangeRepo.getExchangeId("TEST")
+    val idTest2 = ExchangeRepo.getExchangeId("TEST")
+
+    assert(idTest === idTest2)
+
+    val idATest = ExchangeRepo.getExchangeId("ATEST")
+    val idATest2 = ExchangeRepo.getExchangeId("ATEST")
+
+    assert(idATest === idATest2)
+
+    Await.result(DB.db.run(ExchangeTable.query.delete), Duration.Inf)
+    ExchangeRepo.map.clear()
+
+    val id2Test = ExchangeRepo.getExchangeId("TEST")
+    val id2Test2 = ExchangeRepo.getExchangeId("TEST")
+
+    assert(idTest !== id2Test)
+    assert(id2Test === id2Test2)
   }
 }

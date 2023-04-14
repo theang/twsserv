@@ -2,6 +2,7 @@ package serv1.db.repo.impl
 
 import serv1.db.DB
 import serv1.db.DB.{createTables, db}
+import serv1.db.repo.intf.TickerTickRepoIntf
 import serv1.db.schema._
 import serv1.model.ticker.TickerLoadType
 import slick.jdbc.PostgresProfile.api._
@@ -14,7 +15,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, _}
 import scala.jdk.CollectionConverters._
 
-object TickerTickRepo extends Logging with BaseRepo {
+object TickerTickRepo extends Logging with BaseRepo with TickerTickRepoIntf {
   var duration: Duration = Duration.Inf
   var writeDuration: Duration = 5.second
   var readDuration: Duration = 5.second
@@ -43,6 +44,7 @@ object TickerTickRepo extends Logging with BaseRepo {
     }
     createdTables.get(ticker)
   }
+
 
   def writeLast(ticker: TickerLoadType, data: Seq[TickerTickLast]): Unit = {
     createTableIfNotExists(ticker) match {

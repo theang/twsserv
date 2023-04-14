@@ -1,4 +1,4 @@
-package serv1.rest.ticker
+package serv1.rest.controllers.ticker
 
 import akka.actor.typed.scaladsl.AskPattern.{Askable, schedulerFromActorSystem}
 import akka.actor.typed.{ActorRef, ActorSystem}
@@ -11,13 +11,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import jakarta.ws.rs._
 import jakarta.ws.rs.core.MediaType
 import serv1.rest.JsonFormats
-import serv1.rest.ticker.TickerJobControlActor._
+import serv1.rest.actors.ticker.TickerJobControlActor._
 import slick.util.Logging
 
 import scala.concurrent.duration._
 
 @Path("/tickerJob")
-class TickerJobControl(tickerJobControlActor: ActorRef[RequestMessage])(implicit system: ActorSystem[_])
+class TickerJobControlRest(tickerJobControlActor: ActorRef[RequestMessage])(implicit system: ActorSystem[_])
   extends Directives with JsonFormats with Logging {
   implicit val timeout: Timeout = 1000.seconds
 

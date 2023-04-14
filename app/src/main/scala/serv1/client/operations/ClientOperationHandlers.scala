@@ -2,29 +2,30 @@ package serv1.client.operations
 
 import com.ib.client.Bar
 import serv1.client.TWSClient.config
-import serv1.client.converters.HistoricalDataConverter
+import serv1.client.model.TickerTickLastExchange
+import serv1.db.schema.TickerTickBidAsk
 import serv1.model.HistoricalData
 import slick.util.Logging
 
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import scala.collection.concurrent
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.jdk.CollectionConverters._
 
 object ClientOperationHandlers extends Logging {
-  val THREADS_NUMBER = 5
+  var THREADS_NUMBER: Int = 5
   implicit val context: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(THREADS_NUMBER))
-  val LOAD_CHUNK_SIZE: Int = config.getInt("loadChunkSize")
+  var LOAD_CHUNK_SIZE: Int = config.getInt("loadChunkSize")
+  var LOAD_TICK_CHUNK_SIZE: Int = config.getInt("loadTickChunkSize")
   type ErrorHandler = (Int, String, String) => Unit
 
-  type HistoricalDataOperationCallback = (Seq[HistoricalData], Boolean) => Unit
+  case class TickerLastDataOperation(clOp: ClientOperation[TickerTickLastExchange, ArrayBuffer[TickerTickLastExchange], ClientOperationCallbacks.TickLastOperationCallback]) extends DataOperation
 
-  case class HistoricalDataOperation(barConv: Bar => HistoricalData,
-                                     clOp: ClientOperation[ArrayBuffer[HistoricalData], HistoricalDataOperationCallback])
+  case class TickerBidAskDataOperation(clOp: ClientOperation[TickerTickBidAsk, ArrayBuffer[TickerTickBidAsk], ClientOperationCallbacks.TickBidAskOperationCallback]) extends DataOperation
 
-  val historicalData: concurrent.Map[Int, HistoricalDataOperation] =
-    new ConcurrentHashMap[Int, HistoricalDataOperation]().asScala
+  val historicalData: concurrent.Map[Int, DataOperation] =
+    new ConcurrentHashMap[Int, DataOperation]().asScala
   val errorHandlers: concurrent.Map[Int, ErrorHandler] =
     new ConcurrentHashMap[Int, ErrorHandler]().asScala
 
@@ -36,37 +37,56 @@ object ClientOperationHandlers extends Logging {
   def addHistoricalDataHandler(reqN: Int,
                                precMultiplier: Int,
                                dateFormat: Int,
-                               cont: HistoricalDataOperationCallback,
+                               cont: ClientOperationCallbacks.HistoricalDataOperationCallback,
                                error: ErrorHandler): Unit = {
-    val clOp = ClientOperation[ArrayBuffer[HistoricalData], HistoricalDataOperationCallback](cont, new ArrayBuffer[HistoricalData]())
     historicalData.addOne((reqN,
-      HistoricalDataOperation(HistoricalDataConverter.fromPrecAndDateFormat(precMultiplier, dateFormat),
-        clOp)))
+      new HistoricalDataClientOperation(cont, new ArrayBuffer[HistoricalData](), precMultiplier, dateFormat, LOAD_CHUNK_SIZE)))
     errorHandlers.addOne((reqN, error))
   }
 
-  def handleHistoricalData(reqN: Int, bar: Bar, last: Boolean): Unit = {
+  def addTickLastDataHandler(reqN: Int,
+                             cont: ClientOperationCallbacks.TickLastOperationCallback,
+                             error: ErrorHandler): Unit = {
+    historicalData.addOne((reqN,
+      new TickLastDataClientOperation(cont, new ArrayBuffer[TickerTickLastExchange](), LOAD_TICK_CHUNK_SIZE)))
+    errorHandlers.addOne((reqN, error))
+  }
+
+  def addTickBidAskDataHandler(reqN: Int,
+                               cont: ClientOperationCallbacks.TickBidAskOperationCallback,
+                               error: ErrorHandler): Unit = {
+    historicalData.addOne((reqN,
+      new TickBidAskDataClientOperation(cont, new ArrayBuffer[TickerTickBidAsk](), LOAD_TICK_CHUNK_SIZE)))
+    errorHandlers.addOne((reqN, error))
+  }
+
+  def handleData[DatumType](reqN: Int, datum: DatumType, last: Boolean): Unit = {
     historicalData.get(reqN) match {
-      case Some(co) =>
-        co.clOp.data.synchronized {
-          if (bar != null) {
-            co.clOp.data.addOne(co.barConv(bar))
-          }
-          if ((co.clOp.data.size >= LOAD_CHUNK_SIZE) || last) {
-            val list = co.clOp.data.toList
-            Future {
-              co.clOp.cont(list, last)
+      case Some(dataOp) =>
+        dataOp match {
+          case histDataOp: ClientOperationAdder[DatumType] =>
+            histDataOp.synchronized {
+              if (datum != null) {
+                histDataOp.addOne(datum)
+              }
+              if ((histDataOp.getSize >= histDataOp.chunkSize) || last) {
+                histDataOp.executeCont(last)
+              }
             }
-            co.clOp.data.clear()
-          }
-        }
-        if (last) {
-          removeHandlers(reqN)
+            if (last) {
+              removeHandlers(reqN)
+            }
+          case _ => logger.warn(s"handleData: reqN = $reqN;" +
+            s" no ClientOperationAdder found")
         }
       case None =>
         logger.warn(s"handleHistoricalData: reqN = $reqN;" +
           s" no request found by number")
     }
+  }
+
+  def handleHistoricalData(reqN: Int, bar: Bar, last: Boolean): Unit = {
+    handleData(reqN, bar, last)
   }
 
   def handleError(reqN: Int, code: Int, msg: String, advancedOrderRejectJson: String): Unit = {
