@@ -4,10 +4,10 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.DateTime
 import serv1.db.DBJsonFormats
 import serv1.model.HistoricalData
-import serv1.rest.historical.HistoricalDataActor.{HistoricalDataResponse, HistoricalDataValues}
-import serv1.rest.loaddata.LoadDataActor._
-import serv1.rest.schedule.ScheduleActor._
-import serv1.rest.ticker.TickerJobControlActor.{AddTickersTrackingRequest, GetStatusRequest, RemoveTickersTrackingRequest, TickersTrackingResponse}
+import serv1.rest.actors.historical.HistoricalDataActor.{HistoricalDataResponse, HistoricalDataValues}
+import serv1.rest.actors.loaddata.LoadDataActor._
+import serv1.rest.actors.schedule.ScheduleActor._
+import serv1.rest.actors.ticker.TickerJobControlActor.{AddTickersTrackingRequest, GetStatusRequest, RemoveTickersTrackingRequest, TickersTrackingResponse}
 import spray.json._
 
 import java.util.UUID
@@ -57,4 +57,9 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol with DBJsonF
   implicit val historicalDataResponseFormat: RootJsonFormat[HistoricalDataResponse] = jsonFormat1(HistoricalDataResponse)
 
   implicit val scheduledTasksResponseFormat: RootJsonFormat[ScheduledTasksResponse] = jsonFormat1(ScheduledTasksResponse)
+
+  implicit val startLoadingTickDataRequestFormat: RootJsonFormat[StartLoadingTickDataRequest] = jsonFormat1(StartLoadingTickDataRequest)
+  implicit val startLoadingTickDataResponseFormat: RootJsonFormat[StartLoadingTickDataResponse] = jsonFormat1(StartLoadingTickDataResponse)
+  implicit val stopLoadingTickDataRequestFormat: RootJsonFormat[StopLoadingTickDataRequest] = jsonFormat1(StopLoadingTickDataRequest)
+
 }

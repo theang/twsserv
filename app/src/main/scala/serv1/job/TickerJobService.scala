@@ -2,10 +2,12 @@ package serv1.job
 
 import akka.actor.typed.ActorRef
 import serv1.client.converters.BarSizeConverter
+import serv1.client.model.TickerTickLastExchange
 import serv1.client.{DataClient, TWSClientErrors}
 import serv1.db.TickerDataActor
-import serv1.db.TickerDataActor.{Retry, Write}
-import serv1.db.repo.intf.JobRepoIntf
+import serv1.db.TickerDataActor.{Retry, Write, WriteTickBidAsk, WriteTickLast}
+import serv1.db.repo.intf.{ExchangeRepoIntf, JobRepoIntf}
+import serv1.db.schema.TickerTickBidAsk
 import serv1.model.HistoricalData
 import serv1.model.job.JobStatuses
 import serv1.model.ticker.TickerLoadType
@@ -18,7 +20,8 @@ import java.util.UUID
 
 class TickerJobService(client: DataClient,
                        jobRepo: JobRepoIntf,
-                       tickerDataActor: ActorRef[TickerDataActor.Message]) extends Logging {
+                       tickerDataActor: ActorRef[TickerDataActor.Message],
+                       exchangeRepo: ExchangeRepoIntf) extends Logging {
 
   var ERROR_CODES_TO_EXCLUDE_TICKERS_FROM_FURTHER_PROCESSING: Set[Int] = Set(TWSClientErrors.CONTRACT_DESCRIPTION_IS_AMBIGUOUS)
 
@@ -71,5 +74,23 @@ class TickerJobService(client: DataClient,
                   from: LocalDateTime,
                   to: LocalDateTime): Unit = tickers.foreach {
     loadTicker(jobId, _, from, to)
+  }
+
+  def startTickLoading(jobId: UUID, ticker: TickerLoadType): (Int, Int) = {
+    client.startLoadingTickData(ticker.tickerType.name, ticker.tickerType.exchange, ticker.tickerType.typ,
+      (rawTick: Seq[TickerTickLastExchange], _) => {
+        val ticks = rawTick.map { rawTick => rawTick.tickerTick.copy(exch = exchangeRepo.getExchangeId(rawTick.exch)) }
+        tickerDataActor ! WriteTickLast(1, ticker = ticker, historicalData = ticks, replyTo = null)
+      }, (ticks: Seq[TickerTickBidAsk], _) => {
+        tickerDataActor ! WriteTickBidAsk(1, ticker = ticker, historicalData = ticks, replyTo = null)
+      }, (code: Int, msg: String, advancedOrderRejectJson: String) => errorCallback(jobId, ticker, code, msg, advancedOrderRejectJson))
+  }
+
+  def stopTickLoading(jobId: UUID, reqNumberLast: Int, reqNumberBidAsk: Int): Unit = {
+    client.cancelLoadingTickData(reqNumberLast, reqNumberBidAsk)
+    tickerDataActor ! Retry(0, s"Set FINISHED state for job $jobId", () => {
+      jobRepo.cancelTickLoadingJob(jobId)
+      true
+    }, null)
   }
 }

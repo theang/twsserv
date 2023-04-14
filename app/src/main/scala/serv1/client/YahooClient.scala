@@ -2,7 +2,8 @@ package serv1.client
 
 import com.typesafe.config.Config
 import serv1.client.converters.BarSizeConverter
-import serv1.client.operations.ClientOperationHandlers.{ErrorHandler, HistoricalDataOperationCallback}
+import serv1.client.operations.ClientOperationCallbacks
+import serv1.client.operations.ClientOperationHandlers.ErrorHandler
 import serv1.config.ServConfig
 import serv1.model.HistoricalData
 import serv1.util.{LocalDateTimeUtil, PowerOperator}
@@ -72,7 +73,7 @@ object YahooClient extends DataClient with Logging with PowerOperator {
   }
 
   override def loadHistoricalData(from: Long, to: Long, ticker: String, exchange: String, typ: String, barSize: Int,
-                                  prec: Int, cont: HistoricalDataOperationCallback, error: ErrorHandler): Unit = {
+                                  prec: Int, cont: ClientOperationCallbacks.HistoricalDataOperationCallback, error: ErrorHandler): Unit = {
     val urlStr: String = baseUrl.format(ticker,
       from.toString,
       to.toString,
@@ -93,4 +94,10 @@ object YahooClient extends DataClient with Logging with PowerOperator {
       cont(readHistoricalDataFromStream(connection.getInputStream, prec), true)
     }
   }
+
+  override def startLoadingTickData(ticker: String, exchange: String, typ: String,
+                                    contLast: ClientOperationCallbacks.TickLastOperationCallback,
+                                    contBidAsk: ClientOperationCallbacks.TickBidAskOperationCallback, error: ErrorHandler): (Int, Int) = ???
+
+  override def cancelLoadingTickData(reqLastN: Int, reqBidAskN: Int): Unit = ???
 }

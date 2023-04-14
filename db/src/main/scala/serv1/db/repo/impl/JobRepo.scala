@@ -4,7 +4,7 @@ import serv1.db.DBSelectRawForUpdate.{AlreadyLocked, NothingToLock, Success}
 import serv1.db.repo.intf.JobRepoIntf
 import serv1.db.schema.{Job, JobTable}
 import serv1.db.{Configuration, DB, DBJsonFormats, DBSelectRawForUpdate}
-import serv1.model.job.{JobState, JobStatuses, TickerJobState}
+import serv1.model.job.{JobState, JobStatuses, TickLoadingJobState, TickerJobState}
 import serv1.model.ticker.{TickerError, TickerLoadType}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
@@ -21,14 +21,14 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
 
   var waitLockDurationSec: Int = Configuration.INITIAL_JOB_REPO_WAIT_LOCK_DURATION
 
-  def archiveJob(id: UUID, tickerJobState: TickerJobState): Int = {
+  def archiveJob[T <: JobState](id: UUID, tickerJobState: T): Int = {
     Await.result(DB.db.run(JobTable.archiveQuery += Job(id, tickerJobState.asInstanceOf[JobState].toJson.prettyPrint)), Duration.Inf)
     Await.result(DB.db.run(JobTable.query.filter(_.jobId === id).delete), Duration.Inf)
   }
 
   def archiveCompletedJobs(): Unit = {
-    getTickerJobs(null).filter {
-      case (id, tickerJobState) =>
+    getTickerJobs[JobState](null).filter {
+      case (id, tickerJobState: JobState) =>
         tickerJobState.status == JobStatuses.FINISHED
       case _ => false
     }.foreach {
@@ -45,13 +45,71 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
     id
   }
 
-  def getTickerJobs(jobId: UUID): Seq[(UUID, TickerJobState)] = {
+  def updateJob[T <: JobState](jobId: UUID, updateState: T => String, updateMessage: String, errorMessage: String): Boolean = {
+    logger.info(s"Updating job $jobId $updateMessage")
+
+    val query = JobTable.query.filter(_.jobId === jobId)
+
+    implicit val db: PostgresProfile.backend.Database = DB.db
+    Await.result(new DBSelectRawForUpdate(query).apply({ job =>
+      val st: JobState = job.state.parseJson.convertTo[JobState]
+      st match {
+        case t: T =>
+          query.map(_.state).update(updateState(t))
+        case default =>
+          DBIO.failed(new Exception(errorMessage))
+      }
+    }, waitLockDurationSec), Duration.Inf) match {
+      case DBSelectRawForUpdate.Failure(reason) =>
+        reason match {
+          case AlreadyLocked =>
+            false
+          case NothingToLock =>
+            throw new Exception(s"No job found for id: $jobId")
+        }
+      case Success(_) =>
+        true
+    }
+  }
+
+  def createTickLoadingJob(tickersToLoad: Seq[TickerLoadType]): UUID = {
+    val id = UUID.randomUUID()
+    Await.result(
+      DB.db.run(
+        DBIO.seq(JobTable.query +=
+          Job(id,
+            TickLoadingJobState(JobStatuses.IN_PROGRESS,
+              tickersToLoad.toList,
+              List.empty).asInstanceOf[JobState].toJson.prettyPrint))),
+      Duration.Inf)
+    id
+  }
+
+  def cancelTickLoadingJob(tickLoadingJobId: UUID): Boolean = {
+    updateJob(tickLoadingJobId, { t: TickLoadingJobState =>
+      t.copy(status = JobStatuses.FINISHED).asInstanceOf[JobState].toJson.prettyPrint
+    }, "", "Can update only Tick Loading Job")
+  }
+
+  def findTickLoadingJobByLoadType(tickerLoadType: TickerLoadType): Seq[UUID] = {
+    getTickerJobs[TickLoadingJobState](null).filter {
+      case (_, tickerJobState: TickLoadingJobState) =>
+        tickerJobState.status == JobStatuses.IN_PROGRESS && tickerJobState.tickers.contains(tickerLoadType)
+      case _ => false
+    }.map {
+      case (id, _) =>
+        id
+    }
+  }
+
+
+  def getTickerJobs[T <: JobState](jobId: UUID): Seq[(UUID, T)] = {
     val query = JobTable.query.filterIf(jobId != null)(_.jobId === jobId)
     val jobs: Seq[Job] = Await.result(DB.db.run[Seq[Job]](query.result), Duration.Inf)
     jobs.map { job =>
       val st: JobState = job.state.parseJson.convertTo[JobState]
       st match {
-        case t: TickerJobState =>
+        case t: T =>
           (job.jobId, t)
         case default =>
           null
@@ -61,24 +119,24 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
     }.toList
   }
 
-  def getTickerJobStates(jobId: UUID): Seq[TickerJobState] = {
+  def getJobStates(jobId: UUID): Seq[(UUID, JobState)] = {
     val query = JobTable.query.filterIf(jobId != null)(_.jobId === jobId)
     val jobs: Seq[Job] = Await.result(DB.db.run[Seq[Job]](query.result), Duration.Inf)
     jobs.map { job =>
       val st: JobState = job.state.parseJson.convertTo[JobState]
-      st match {
-        case t: TickerJobState =>
-          t
-        case default =>
-          null
-      }
-    }.filter {
-      _ != null
-    }.toList
+      (job.jobId, st)
+    }
   }
 
-  def getTickerJobsByStates(jobStatuses: Set[JobStatuses.JobStatus]): Seq[(UUID, TickerJobState)] = {
-    getTickerJobs(null).filter {
+  def getTickerJobStates(jobId: UUID): Seq[TickerJobState] = {
+    getTickerJobs[TickerJobState](jobId).map {
+      case (_, tickerJobState: TickerJobState) =>
+        tickerJobState
+    }
+  }
+
+  def getTickerJobsByStates[T <: JobState](jobStatuses: Set[JobStatuses.JobStatus]): Seq[(UUID, T)] = {
+    getTickerJobs[T](null).filter {
       case (id, tickerJobState) =>
         jobStatuses.contains(tickerJobState.status)
     }
@@ -112,30 +170,9 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
 
 
   def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ignore: Boolean): Boolean = {
-    logger.info(s"Updating job $jobId for ticker, $ticker error = $error, ignore = $ignore")
-
-    val query = JobTable.query.filter(_.jobId === jobId)
-
-    implicit val db: PostgresProfile.backend.Database = DB.db
-    Await.result(new DBSelectRawForUpdate(query).apply({ job =>
-      val st: JobState = job.state.parseJson.convertTo[JobState]
-      st match {
-        case t: TickerJobState =>
-          query.map(_.state).update(updateTickerJobState(t, ticker, error, ignore).asInstanceOf[JobState].toJson.prettyPrint)
-        case default =>
-          DBIO.failed(new Exception("Can update only Ticker Job"))
-      }
-    }, waitLockDurationSec), Duration.Inf) match {
-      case DBSelectRawForUpdate.Failure(reason) =>
-        reason match {
-          case AlreadyLocked =>
-            false
-          case NothingToLock =>
-            throw new Exception(s"No job found for id: $jobId")
-        }
-      case Success(_) =>
-        true
-    }
+    updateJob(jobId, { t: TickerJobState =>
+      updateTickerJobState(t, ticker, error, ignore).asInstanceOf[JobState].toJson.prettyPrint
+    }, "$ticker error = $error, ignore = $ignore", "Can update only Ticker Job")
   }
 
   def removeJob(jobId: UUID): Unit = {

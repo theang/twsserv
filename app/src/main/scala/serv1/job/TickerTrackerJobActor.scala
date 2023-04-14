@@ -2,10 +2,9 @@ package serv1.job
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import serv1.rest.loaddata.LoadService
 import serv1.util.LocalDateTimeUtil
 
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration._
 
 object TickerTrackerJobActor {
   val DELAY: FiniteDuration = 30.seconds

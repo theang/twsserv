@@ -1,6 +1,6 @@
 package serv1.db.repo.intf
 
-import serv1.model.job.{JobStatuses, TickerJobState}
+import serv1.model.job.{JobState, JobStatuses, TickerJobState}
 import serv1.model.ticker.TickerLoadType
 
 import java.time.LocalDateTime
@@ -12,9 +12,13 @@ trait JobRepoIntf {
 
   def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime, overwrite: Boolean): UUID
 
-  def getTickerJobsByStates(jobStatuses: Set[JobStatuses.JobStatus]): Seq[(UUID, TickerJobState)]
+  def getTickerJobsByStates[T <: JobState](jobStatuses: Set[JobStatuses.JobStatus]): Seq[(UUID, T)]
 
   def getTickerJobStates(jobId: UUID): Seq[TickerJobState]
+
+  def getTickerJobs[T <: JobState](jobId: UUID): Seq[(UUID, T)]
+
+  def getJobStates(jobId: UUID): Seq[(UUID, JobState)]
 
   def updateTickerJobState(t: TickerJobState, ticker: TickerLoadType, error: Option[String], ignore: Boolean): TickerJobState
 
@@ -23,4 +27,8 @@ trait JobRepoIntf {
   def updateJob(jobId: UUID, ticker: TickerLoadType): Boolean
 
   def removeJob(jobId: UUID): Unit
+
+  def cancelTickLoadingJob(tickLoadingJobId: UUID): Boolean
+
+  def findTickLoadingJobByLoadType(tickerLoadType: TickerLoadType): Seq[UUID]
 }

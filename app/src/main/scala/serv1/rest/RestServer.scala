@@ -12,10 +12,15 @@ import serv1.client.MultiClient
 import serv1.db.TickerDataActor
 import serv1.db.repo.impl._
 import serv1.job._
-import serv1.rest.historical.HistoricalDataActor
-import serv1.rest.loaddata.{CheckLoadJobStateActor, LoadData, LoadDataActor, LoadService}
-import serv1.rest.schedule.{Schedule, ScheduleActor}
-import serv1.rest.ticker.{TickerJobControl, TickerJobControlActor}
+import serv1.rest.actors.historical.HistoricalDataActor
+import serv1.rest.actors.loaddata
+import serv1.rest.actors.schedule.ScheduleActor
+import serv1.rest.actors.ticker.TickerJobControlActor
+import serv1.rest.controllers.loaddata.LoadDataRest
+import serv1.rest.controllers.schedule.ScheduleRest
+import serv1.rest.controllers.tickdata.TickLoadingRest
+import serv1.rest.controllers.ticker.TickerJobControlRest
+import serv1.rest.services.loaddata.LoadService
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -34,12 +39,12 @@ object RestServer extends RouteConcatenation {
   def apply(host: String, port: Int): Behavior[Message] = Behaviors.setup { ctx =>
 
     implicit val system: ActorSystem[Nothing] = ctx.system
-    val tickerDataActor = ctx.spawn(TickerDataActor(TickerDataRepo), name = "tickerDataActor", databaseDispatcherSelector)
-    val tickerJobService = new TickerJobService(MultiClient, JobRepo, tickerDataActor)
+    val tickerDataActor = ctx.spawn(TickerDataActor(TickerDataRepo, TickerTickRepo), name = "tickerDataActor", databaseDispatcherSelector)
+    val tickerJobService = new TickerJobService(MultiClient, JobRepo, tickerDataActor, ExchangeRepo)
     val tickerActorRef = ctx.spawn(TickerJobActor(tickerJobService, JobRepo), "tickerJobActor")
     val loadService = new LoadService(TickerDataRepo, tickerActorRef)
-    val loadDataActorRef = ctx.spawn(LoadDataActor(loadService), "loadDataActor")
-    val checkJobActorRef = ctx.spawn(CheckLoadJobStateActor(loadService), "checkJobStateActor")
+    val loadDataActorRef = ctx.spawn(loaddata.LoadDataActor(loadService), "loadDataActor")
+    val checkJobActorRef = ctx.spawn(loaddata.CheckLoadJobStateActor(loadService), "checkJobStateActor")
     val tickerJobControlActorRef = ctx.spawn(TickerJobControlActor(ScheduledTaskRepo, TickerTrackingRepo, TickerTypeRepo), "tickerJobControlActor")
     val tickerTrackerJobService = new TickerTrackerJobService(loadService,
       ScheduledTaskRepo, TickerTypeRepo, TickerTrackingRepo, TickerDataRepo)
@@ -54,9 +59,10 @@ object RestServer extends RouteConcatenation {
         }
       }
     } ~
-      new LoadData(loadDataActorRef, checkJobActorRef, historicalDataActorRef).routes ~
-      new Schedule(scheduleActorRef).routes ~
-      new TickerJobControl(tickerJobControlActorRef).routes
+      new LoadDataRest(loadDataActorRef, checkJobActorRef, historicalDataActorRef).routes ~
+      new ScheduleRest(scheduleActorRef).routes ~
+      new TickerJobControlRest(tickerJobControlActorRef).routes ~
+      new TickLoadingRest(loadDataActorRef).routes
 
     val serverBinding: Future[Http.ServerBinding] =
       Http().newServerAt(host, port).bind(routes)

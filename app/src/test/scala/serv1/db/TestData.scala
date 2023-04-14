@@ -1,7 +1,7 @@
 package serv1.db
 
 import serv1.model.HistoricalData
-import serv1.model.job.{JobStatuses, TickerJobState}
+import serv1.model.job.{JobStatuses, TickLoadingJobState, TickerJobState}
 import serv1.model.ticker.{BarSizes, TickerLoadType, TickerType}
 import serv1.util.LocalDateTimeUtil
 
@@ -24,6 +24,9 @@ object TestData {
   val testHistoricalData2: HistoricalData = HistoricalData(LocalDateTimeUtil.toEpoch(to), 2050, 1050, 1550, 1650, 1050)
   val testTickerJobState: TickerJobState = TickerJobState(JobStatuses.IN_PROGRESS,
     tickers = testTickers, loadedTickers = List.empty, errors = List.empty, ignoredTickers = List.empty, from = from, to = to, overwrite = true)
+  val testTickerJobStateFinished: TickerJobState = testTickerJobState.copy(status = JobStatuses.FINISHED)
+  val testTickerTickLoadingJobState: TickLoadingJobState = TickLoadingJobState(JobStatuses.IN_PROGRESS,
+    tickers = testTickers, errors = List.empty)
 
   val testScheduleName: String = "test"
   val testSchedule: String = "* * * * *"

@@ -58,7 +58,7 @@ class TickerTickLastTableGen(tt: TickerLoadType) {
 
     def * = (id, time, price, size, exch, spec, pastLimit, unreported) <> (TickerTickLast.tupled, TickerTickLast.unapply)
 
-    def timeIndex = index(s"IND_TIME_$tableName", time, unique = true)
+    def timeIndex = index(s"IND_TIME_$tableName", time, unique = false)
   }
 }
 
@@ -86,6 +86,6 @@ class TickerTickBidAskTableGen(tt: TickerLoadType) {
 
     def * = (id, time, bidPrice, askPrice, bidSize, askSize, bidPastLow, askPastHigh) <> (TickerTickBidAsk.tupled, TickerTickBidAsk.unapply)
 
-    def timeIndex = index(s"IND_TIME_$tableName", time, unique = true)
+    def timeIndex = index(s"IND_TIME_$tableName", time, unique = false)
   }
 }

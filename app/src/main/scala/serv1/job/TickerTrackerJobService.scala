@@ -4,7 +4,7 @@ import serv1.Configuration.INITIAL_TICKER_TRACKER_SCHEDULED_TASKS_ENABLED
 import serv1.client.converters.BarSizeConverter
 import serv1.db.repo.intf.{ScheduledTaskRepoIntf, TickerDataRepoIntf, TickerTrackingRepoIntf, TickerTypeRepoIntf}
 import serv1.model.ticker.BarSizes.{BarSize, DAY, HOUR, MIN15}
-import serv1.rest.loaddata.LoadService
+import serv1.rest.services.loaddata.LoadService
 import serv1.util.{CronUtil, LocalDateTimeUtil}
 import slick.util.Logging
 
