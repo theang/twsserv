@@ -7,6 +7,7 @@ import serv1.client.model.TickerTickLastExchange
 import serv1.client.operations.{ClientOperationCallbacks, ClientOperationHandlers}
 import serv1.config.ServConfig
 import serv1.db.schema.{TickerTickBidAsk, TickerTickLast}
+import serv1.model.ticker.TickerType
 import serv1.util.{LocalDateTimeUtil, PowerOperator}
 import slick.util.Logging
 
@@ -193,7 +194,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HH:mm:ss")
 
 
-  def loadHistoricalData(from: Long, to: Long, ticker: String, exchange: String, typ: String, barSize: Int, prec: Int,
+  def loadHistoricalData(from: Long, to: Long, tickerType: TickerType, barSize: Int,
                          cont: ClientOperationCallbacks.HistoricalDataOperationCallback,
                          error: ClientOperationHandlers.ErrorHandler): Unit = {
     checkConnected()
@@ -202,7 +203,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
       return
     }
 
-    val contract = ContractConverter.getContract(ticker, exchange, typ)
+    val contract = ContractConverter.getContract(tickerType)
     val reqN = sequence.getAndIncrement()
     val queryTime = LocalDateTimeUtil.fromEpoch(to).format(formatter)
     val durationSecond = to - from
@@ -211,11 +212,11 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
     val barSizeStr = BarSizeConverter.getBarSize(barSize)
     val dateFormat = BarSizeConverter.getDateFormat(barSize)
     logger.warn(s"historicalData request: $reqN: $contract, $queryTime, $duration, $barSizeStr")
-    ClientOperationHandlers.addHistoricalDataHandler(reqN, 10 ** prec, dateFormat, cont, error)
+    ClientOperationHandlers.addHistoricalDataHandler(reqN, 10 ** tickerType.prec, dateFormat, cont, error)
     client.reqHistoricalData(reqN, contract, queryTime, duration, barSizeStr, "TRADES", 1, dateFormat, false, null)
   }
 
-  def startLoadingTickData(ticker: String, exchange: String, typ: String,
+  def startLoadingTickData(tickerType: TickerType,
                            contLast: ClientOperationCallbacks.TickLastOperationCallback,
                            contBidAsk: ClientOperationCallbacks.TickBidAskOperationCallback,
                            error: ClientOperationHandlers.ErrorHandler): (Int, Int) = {
@@ -224,7 +225,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
       error(TWSClientErrors.COULD_NOT_CONNECT, "Could not connect", null)
       return (-1, -1)
     }
-    val contract = ContractConverter.getContract(ticker, exchange, typ)
+    val contract = ContractConverter.getContract(tickerType)
     val reqLastN = sequence.getAndIncrement()
     val reqBidAskN = sequence.getAndIncrement()
     logger.warn(s"start Loading Tick data: $reqLastN, $reqBidAskN: $contract")

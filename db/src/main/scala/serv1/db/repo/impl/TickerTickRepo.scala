@@ -1,7 +1,7 @@
 package serv1.db.repo.impl
 
 import serv1.db.DB
-import serv1.db.DB.{createTables, db}
+import serv1.db.DB.db
 import serv1.db.repo.intf.TickerTickRepoIntf
 import serv1.db.schema._
 import serv1.model.ticker.TickerLoadType
@@ -27,7 +27,7 @@ object TickerTickRepo extends Logging with BaseRepo with TickerTickRepoIntf {
     new ConcurrentHashMap[TickerLoadType, TickerTickQueries]().asScala
 
   def createTableIfNotExists(ticker: TickerLoadType): Option[TickerTickQueries] = {
-    if (!createTables().contains(ticker)) {
+    if (!createdTables.contains(ticker)) {
       val dbTables = Await.result(db.run(MTable.getTables), Duration.Inf).map(_.name.name)
       val tableLastName = TickerDataTableNameUtil.formatTickTableName(ticker, TickerTickTable.tickLast)
       val tableBidAskName = TickerDataTableNameUtil.formatTickTableName(ticker, TickerTickTable.tickBidAsk)

@@ -14,7 +14,7 @@ object DB extends Logging {
   val DBConfigPath = "postgres"
   val db = Database.forConfig(DBConfigPath)
 
-  def upgradeDatabaseVersionIfNeeded(): Unit = {
+  def upgradeDatabaseVersionIfNeeded(dbSchemaVersion: String = Configuration.DATABASE_SCHEMA_VERSION): Unit = {
     val configs: Seq[Config] = ConfigRepo.getConfigsByType(Configuration.DATABASE_SCHEMA_VERSION_PARAMETER_TYP)
       .filter(_.name == Configuration.DATABASE_SCHEMA_VERSION_PARAMETER_NAME)
     val dbVersion: String = if (configs.isEmpty) {
@@ -22,23 +22,23 @@ object DB extends Logging {
     } else {
       configs.head.value
     }
-    logger.info(s"DATABASE_SCHEMA_VERSION in db: $dbVersion, current version in config: ${Configuration.DATABASE_SCHEMA_VERSION}")
-    if (Configuration.DATABASE_SCHEMA_VERSION < dbVersion) {
-      throw new IllegalArgumentException(s"DATABASE_SCHEMA_VERSION in db: $dbVersion is bigger than current version in config: ${Configuration.DATABASE_SCHEMA_VERSION}")
+    logger.info(s"DATABASE_SCHEMA_VERSION in db: $dbVersion, current version in config: $dbSchemaVersion")
+    if (dbSchemaVersion < dbVersion) {
+      throw new IllegalArgumentException(s"DATABASE_SCHEMA_VERSION in db: $dbVersion is bigger than current version in config: $dbSchemaVersion")
     }
-    if (Configuration.DATABASE_SCHEMA_VERSION > dbVersion) {
-      val convertScript = DBSchemaUpgrade.getSchemaUpgradeCommand(dbVersion, Configuration.DATABASE_SCHEMA_VERSION)
+    if (dbSchemaVersion > dbVersion) {
+      val convertScript = DBSchemaUpgrade.getSchemaUpgradeCommand(dbVersion, dbSchemaVersion)
       logger.info(s"upgrading db using script: $convertScript")
       val sqlScript = SQLActionBuilder(Seq(convertScript), SetParameter.SetUnit)
       Await.result(DB.db.run(sqlScript.as[Unit]), Duration.Inf)
       ConfigRepo.putConfigs(List(Config(Configuration.DATABASE_SCHEMA_VERSION_PARAMETER_TYP,
-        Configuration.DATABASE_SCHEMA_VERSION_PARAMETER_NAME, Configuration.DATABASE_SCHEMA_VERSION)))
+        Configuration.DATABASE_SCHEMA_VERSION_PARAMETER_NAME, dbSchemaVersion)))
     } else {
       logger.info("No need for database update")
     }
   }
 
-  def createTables(): Seq[Unit] = {
+  def createTables(dbSchemaVersion: String = Configuration.DATABASE_SCHEMA_VERSION): Seq[Unit] = {
     val dbTables = Await.result(db.run(MTable.getTables), Duration.Inf).map(_.name.name)
     val tablesBeforeSchemaUpgrade = List(
       ConfigTable.query
@@ -46,7 +46,7 @@ object DB extends Logging {
     val actionBeforeSchemaUpgrade = for (t <- tablesBeforeSchemaUpgrade) yield t.schema.createIfNotExists
     Await.result(db.run(DBIO.sequence(actionBeforeSchemaUpgrade)), Duration.Inf)
 
-    upgradeDatabaseVersionIfNeeded()
+    upgradeDatabaseVersionIfNeeded(dbSchemaVersion)
 
     val tables = List(JobTable.query,
       JobTable.archiveQuery,

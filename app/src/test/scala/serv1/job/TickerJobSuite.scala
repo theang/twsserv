@@ -15,7 +15,7 @@ class TickerJobSuite extends TestService with MockFactory {
 
   test("call service to run Ticker Data loading Job") {
     val clientMock = mock[DataClient]
-    (clientMock.loadHistoricalData _).expects(*, *, *, *, *, *, *, *, *).returning(()).twice()
+    (clientMock.loadHistoricalData _).expects(*, *, *, *, *, *).returning(()).twice()
     val jobRepo = mock[JobRepoIntf]
     (jobRepo.getJobStates _).expects(TestID).returning(List((TestID, testTickerJobState))).repeat(1)
     (jobRepo.getJobStates _).expects(TestID).returning(List((TestID, testTickerJobStateFinished))).repeat(1)
@@ -48,7 +48,7 @@ class TickerJobSuite extends TestService with MockFactory {
 
   test("call service to run Ticker Tick Loading Job") {
     val clientMock = mock[DataClient]
-    (clientMock.startLoadingTickData _).expects(*, *, *, *, *, *).returning((1, 1)).once()
+    (clientMock.startLoadingTickData _).expects(*, *, *, *).returning((1, 1)).once()
     val jobRepo = mock[JobRepoIntf]
     (jobRepo.getJobStates _).expects(TestID).returning(List((TestID, testTickerTickLoadingJobState)))
     val tickerDataRepo = mock[TickerDataRepoIntf]

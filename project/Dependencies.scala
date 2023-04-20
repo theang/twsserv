@@ -6,7 +6,8 @@ object Dependencies {
   val akkaHttpVersion = "10.2.9"
   val akkaVersion = "2.7.0"
   val swaggerVersion = "2.2.1"
-  val zioVersion = "2.0.11"
+  val pgsqlVersion = "42.5.4"
+
 
   val commonDependencies: Seq[ModuleID] = Seq(
     // Use Scala 2.13 in our library project
@@ -42,7 +43,7 @@ object Dependencies {
     "com.typesafe.slick" % s"slick_$scalaMajorVersion" % "3.4.0",
     "com.typesafe.slick" % s"slick-hikaricp_$scalaMajorVersion" % "3.4.0",
     "com.typesafe.slick" % s"slick-codegen_$scalaMajorVersion" % "3.4.0",
-    "org.postgresql" % "postgresql" % "42.5.1",
+    "org.postgresql" % "postgresql" % pgsqlVersion,
 
     "io.swagger.core.v3" % "swagger-core-jakarta" % s"$swaggerVersion",
     "io.swagger.core.v3" % "swagger-annotations-jakarta" % s"$swaggerVersion",
@@ -55,8 +56,20 @@ object Dependencies {
     "org.snakeyaml" % "snakeyaml-engine" % "2.6-SNAPSHOT"
   )
 
+  val zioVersion = "2.0.11"
+  val zioConfigVersion = "4.0.0-RC14"
+  val zioHttpVersion = "3.0.0-RC1"
+  val zioQuillVersion = "4.6.0"
+
   val zioDependencies: Seq[ModuleID] = Seq(
-    "dev.zio" %% "zio" % s"$zioVersion",
-    "dev.zio" %% "zio-streams" % s"$zioVersion"
+    "dev.zio" %% "zio" % zioVersion,
+    "dev.zio" %% "zio-streams" % zioVersion,
+    "dev.zio" %% "zio-http" % zioHttpVersion,
+    "dev.zio" %% "zio-config" % zioConfigVersion,
+    "dev.zio" %% "zio-config-typesafe" % zioConfigVersion,
+    "dev.zio" %% "zio-config-magnolia" % zioConfigVersion,
+    "dev.zio" %% "zio-config-yaml" % zioConfigVersion,
+    "io.getquill" %% "quill-jdbc-zio" % zioQuillVersion,
+    "org.postgresql" % "postgresql" % pgsqlVersion,
   )
 }

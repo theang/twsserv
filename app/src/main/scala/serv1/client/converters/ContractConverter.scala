@@ -2,15 +2,17 @@ package serv1.client.converters
 
 import com.ib.client.Contract
 import com.ib.client.Types.SecType
+import serv1.model.ticker.TickerType
 
 object ContractConverter {
-  def getContract(ticker: String, exchange: String, typ: String): Contract = {
+  def getContract(tickerType: TickerType): Contract = {
     var contract = new Contract()
-    contract.exchange(exchange)
-    var secType = SecType.get(typ)
+    contract.exchange(tickerType.exchange)
+    var secType = SecType.get(tickerType.typ)
     contract.secType(secType)
-    contract.symbol(ticker)
+    contract.symbol(tickerType.name)
     contract.currency("USD")
+    tickerType.lastTradeDateOrContractMonth.foreach(contract.lastTradeDateOrContractMonth(_))
     contract
   }
 }

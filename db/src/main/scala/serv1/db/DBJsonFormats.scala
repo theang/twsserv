@@ -29,7 +29,7 @@ trait DBJsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
   }
 
 
-  implicit val tickerTypeFormat: RootJsonFormat[TickerType] = jsonFormat4(TickerType)
+  implicit val tickerTypeFormat: RootJsonFormat[TickerType] = jsonFormat10(TickerType)
 
   implicit object BarSizeFormat extends RootJsonFormat[BarSize] {
     override def write(obj: BarSize): JsString = JsString(obj.toString)

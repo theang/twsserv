@@ -7,7 +7,7 @@ import akka.util.Timeout
 import serv1.Configuration.INITIAL_RESTART_DATA_LOAD_TASKS_ENABLED
 import serv1.db.repo.intf.JobRepoIntf
 import serv1.job.TickerJobActor.{Run, RunningState}
-import serv1.model.job.JobStatuses
+import serv1.model.job.{JobStatuses, TickerJobState}
 import slick.util.Logging
 
 import scala.concurrent.Await
@@ -35,7 +35,7 @@ object RestartLoadActor extends Logging {
           context =>
             Behaviors.receiveMessage {
               case Restart =>
-                val ids = jobRepoIntf.getTickerJobsByStates(Set(JobStatuses.IN_PROGRESS, JobStatuses.ERROR)).map {
+                val ids = jobRepoIntf.getTickerJobsByStates[TickerJobState](Set(JobStatuses.IN_PROGRESS, JobStatuses.ERROR)).map {
                   case (id, _) =>
                     id
                 }

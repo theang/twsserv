@@ -5,6 +5,7 @@ import serv1.client.converters.HistoricalDataConverter
 import serv1.client.model.TickerTickLastExchange
 import serv1.db.schema.TickerTickBidAsk
 import serv1.model.HistoricalData
+import slick.util.Logging
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
@@ -63,7 +64,7 @@ class HistoricalDataClientOperation(contP: ClientOperationCallbacks.HistoricalDa
 
 class TickLastDataClientOperation(contP: ClientOperationCallbacks.TickLastOperationCallback, dataP: ArrayBuffer[TickerTickLastExchange],
                                   pChunkSize: Int)(implicit executionContext: ExecutionContext)
-  extends ClientOperation[TickerTickLastExchange, ArrayBuffer[TickerTickLastExchange], ClientOperationCallbacks.TickLastOperationCallback](contP, dataP) with DataOperation {
+  extends ClientOperation[TickerTickLastExchange, ArrayBuffer[TickerTickLastExchange], ClientOperationCallbacks.TickLastOperationCallback](contP, dataP) with DataOperation with Logging {
 
   override def addOne(datum: TickerTickLastExchange): Unit = {
     data.addOne(datum)

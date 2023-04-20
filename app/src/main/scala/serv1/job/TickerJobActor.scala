@@ -48,6 +48,7 @@ object TickerJobActor extends Logging {
                 logger.warn(s"JobId $jobId state is Finished, to start it it needs to be in ERROR or IN_PROGRESS state")
               }
             case Seq((_, tickLoadingState: TickLoadingJobState)) =>
+              logger.info(s"Tick loading job: $jobId")
               if (!runningJobs.contains(jobId) && tickLoadingState.status != JobStatuses.FINISHED) {
                 runningJobs += jobId
                 val seqNumbers = tickerJobService.startTickLoading(jobId, tickLoadingState.tickers.head)

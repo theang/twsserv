@@ -32,14 +32,14 @@ object LoadDataActor {
   sealed trait Message
 
   // LoadDataRequest loads tickers bars, skipping existing data
-  case class LoadDataRequestRef(loadDataRequest: LoadDataRequest, replyTo: ActorRef[LoadDataResponse]) extends Message
+  case class LoadDataRequestRef(loadDataRequest: LoadDataRequest, replyTo: ActorRef[ResponseMessage]) extends Message
 
   // ReloadDataRequest loads tickers bars rewriting existing data
-  case class ReloadDataRequestRef(reloadDataRequest: ReloadDataRequest, replyTo: ActorRef[LoadDataResponses]) extends Message
+  case class ReloadDataRequestRef(reloadDataRequest: ReloadDataRequest, replyTo: ActorRef[ResponseMessage]) extends Message
 
-  case class StartLoadingTickDataRequestRef(startLoadingTickDataRequest: StartLoadingTickDataRequest, replyTo: ActorRef[StartLoadingTickDataResponse]) extends Message
+  case class StartLoadingTickDataRequestRef(startLoadingTickDataRequest: StartLoadingTickDataRequest, replyTo: ActorRef[ResponseMessage]) extends Message
 
-  case class StopLoadingTickDataRequestRef(stopLoadingTickDataRequest: StopLoadingTickDataRequest, replyTo: ActorRef[StopLoadingTickDataResponse]) extends Message
+  case class StopLoadingTickDataRequestRef(stopLoadingTickDataRequest: StopLoadingTickDataRequest, replyTo: ActorRef[ResponseMessage]) extends Message
 
 
   def apply(loadService: LoadService): Behavior[Message] = {
