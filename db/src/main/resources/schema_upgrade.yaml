@@ -1,0 +1,33 @@
+upgrade_0_to_1: |+
+  START TRANSACTION;
+  DO $$
+  DECLARE
+   sch text := 'public';
+   tbl text;
+  BEGIN
+  FOR tbl IN
+    SELECT table_name FROM information_schema.tables
+    WHERE  table_schema in (sch)
+      AND  table_name  like 'TD_%'
+  LOOP
+  EXECUTE format('ALTER TABLE %I.%I ALTER COLUMN "VOL" TYPE double precision USING "VOL"::double precision', sch, tbl);
+  END LOOP;
+  END $$ LANGUAGE 'plpgsql';
+  COMMIT;
+upgrade_1_to_2: |+
+  START TRANSACTION;
+  DO $$
+  BEGIN
+  ALTER TABLE "TICKER" 
+  ADD COLUMN "LOCAL_SYMBOL" varchar NULL,
+  ADD COLUMN "STRIKE" int4 NULL,
+  ADD COLUMN "RIGHT" varchar NULL,
+  ADD COLUMN "MULTIPLIER" varchar NULL,
+  ADD COLUMN "LAST_TRADE_DATE_OR_CONTRACT_MONTH" varchar NULL,
+  ADD COLUMN "CURRENCY" varchar NULL;
+  DROP INDEX "IND_NAME";
+  CREATE UNIQUE INDEX ON "TICKER" ("NAME", "EXCHANGE", "TYP", "BAR_SIZE", "PREC", "LOCAL_SYMBOL", 
+                                   "STRIKE", "RIGHT", "MULTIPLIER", "LAST_TRADE_DATE_OR_CONTRACT_MONTH", 
+                                   "MULTIPLIER"); 
+  END $$ LANGUAGE 'plpgsql';
+  COMMIT;

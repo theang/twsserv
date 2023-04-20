@@ -9,7 +9,6 @@ import serv1.db.TickerDataActor.{Retry, Write, WriteTickBidAsk, WriteTickLast}
 import serv1.db.repo.intf.{ExchangeRepoIntf, JobRepoIntf}
 import serv1.db.schema.TickerTickBidAsk
 import serv1.model.HistoricalData
-import serv1.model.job.JobStatuses
 import serv1.model.ticker.TickerLoadType
 import serv1.util.LocalDateTimeUtil
 import slick.util.Logging
@@ -27,13 +26,13 @@ class TickerJobService(client: DataClient,
 
   var tickerJobActor: Option[ActorRef[TickerJobActor.JobActorMessage]] = None
 
+  val DEFAULT_EXCHANGE: String = "DEFAULT"
+
   def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ignore: Boolean): Boolean = {
     val updateResult = jobRepo.updateJob(jobId, ticker, error, ignore)
     if (updateResult && (ignore || error.isEmpty)) {
-      if (jobRepo.getTickerJobStates(jobId).head.status == JobStatuses.FINISHED) {
-        tickerJobActor.foreach { tickerJobActorRef =>
-          tickerJobActorRef ! TickerJobActor.Finished(jobId)
-        }
+      tickerJobActor.foreach { tickerJobActorRef =>
+        tickerJobActorRef ! TickerJobActor.Finished(jobId)
       }
     }
     updateResult
@@ -61,11 +60,8 @@ class TickerJobService(client: DataClient,
     val overwrite = jobRepo.getTickerJobStates(jobId).head.overwrite
     client.loadHistoricalData(LocalDateTimeUtil.toEpoch(from),
       LocalDateTimeUtil.toEpoch(to),
-      ticker.tickerType.name,
-      ticker.tickerType.exchange,
-      ticker.tickerType.typ,
+      ticker.tickerType,
       BarSizeConverter.getBarSizeSeconds(ticker.barSize),
-      ticker.tickerType.prec,
       (data: Seq[HistoricalData], last: Boolean) => saveHistoricalData(jobId, ticker, data, overwrite, last),
       (code: Int, msg: String, advancedOrderRejectJson: String) => errorCallback(jobId, ticker, code, msg, advancedOrderRejectJson))
   }
@@ -77,9 +73,13 @@ class TickerJobService(client: DataClient,
   }
 
   def startTickLoading(jobId: UUID, ticker: TickerLoadType): (Int, Int) = {
-    client.startLoadingTickData(ticker.tickerType.name, ticker.tickerType.exchange, ticker.tickerType.typ,
+    client.startLoadingTickData(ticker.tickerType,
       (rawTick: Seq[TickerTickLastExchange], _) => {
-        val ticks = rawTick.map { rawTick => rawTick.tickerTick.copy(exch = exchangeRepo.getExchangeId(rawTick.exch)) }
+        val ticks = rawTick.map { tick =>
+          tick.tickerTick.copy(exch = exchangeRepo.getExchangeId(
+            if (tick.exch == null) DEFAULT_EXCHANGE else tick.exch
+          ), spec = Option(tick.tickerTick.spec).getOrElse(""))
+        }
         tickerDataActor ! WriteTickLast(1, ticker = ticker, historicalData = ticks, replyTo = null)
       }, (ticks: Seq[TickerTickBidAsk], _) => {
         tickerDataActor ! WriteTickBidAsk(1, ticker = ticker, historicalData = ticks, replyTo = null)

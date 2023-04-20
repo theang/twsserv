@@ -6,6 +6,7 @@ import serv1.client.operations.ClientOperationCallbacks
 import serv1.client.operations.ClientOperationHandlers.ErrorHandler
 import serv1.config.ServConfig
 import serv1.model.HistoricalData
+import serv1.model.ticker.TickerType
 import serv1.util.{LocalDateTimeUtil, PowerOperator}
 import slick.util.Logging
 
@@ -72,9 +73,9 @@ object YahooClient extends DataClient with Logging with PowerOperator {
     }
   }
 
-  override def loadHistoricalData(from: Long, to: Long, ticker: String, exchange: String, typ: String, barSize: Int,
-                                  prec: Int, cont: ClientOperationCallbacks.HistoricalDataOperationCallback, error: ErrorHandler): Unit = {
-    val urlStr: String = baseUrl.format(ticker,
+  override def loadHistoricalData(from: Long, to: Long, tickerType: TickerType, barSize: Int,
+                                  cont: ClientOperationCallbacks.HistoricalDataOperationCallback, error: ErrorHandler): Unit = {
+    val urlStr: String = baseUrl.format(tickerType.name,
       from.toString,
       to.toString,
       getBarSize(barSize))
@@ -91,11 +92,11 @@ object YahooClient extends DataClient with Logging with PowerOperator {
       error(connection.getResponseCode, "Error when loading historical data", "")
     } else {
       logger.debug(s"reading Historical Data")
-      cont(readHistoricalDataFromStream(connection.getInputStream, prec), true)
+      cont(readHistoricalDataFromStream(connection.getInputStream, tickerType.prec), true)
     }
   }
 
-  override def startLoadingTickData(ticker: String, exchange: String, typ: String,
+  override def startLoadingTickData(tickerType: TickerType,
                                     contLast: ClientOperationCallbacks.TickLastOperationCallback,
                                     contBidAsk: ClientOperationCallbacks.TickBidAskOperationCallback, error: ErrorHandler): (Int, Int) = ???
 

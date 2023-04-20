@@ -38,7 +38,7 @@ class TickLoadingRest(loadDataActor: ActorRef[Message])(implicit system: ActorSy
         entity(as[StartLoadingTickDataRequest]) { request =>
           val result = loadDataActor.ask(replyTo => StartLoadingTickDataRequestRef(request, replyTo))
           complete {
-            result.mapTo[LoadDataResponse]
+            result.mapTo[StartLoadingTickDataResponse]
           }
         }
       }

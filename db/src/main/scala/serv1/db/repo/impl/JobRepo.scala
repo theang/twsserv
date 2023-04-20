@@ -86,7 +86,7 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
   }
 
   def cancelTickLoadingJob(tickLoadingJobId: UUID): Boolean = {
-    updateJob(tickLoadingJobId, { t: TickLoadingJobState =>
+    updateJob[TickLoadingJobState](tickLoadingJobId, { t: TickLoadingJobState =>
       t.copy(status = JobStatuses.FINISHED).asInstanceOf[JobState].toJson.prettyPrint
     }, "", "Can update only Tick Loading Job")
   }
@@ -170,9 +170,17 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
 
 
   def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ignore: Boolean): Boolean = {
-    updateJob(jobId, { t: TickerJobState =>
-      updateTickerJobState(t, ticker, error, ignore).asInstanceOf[JobState].toJson.prettyPrint
-    }, "$ticker error = $error, ignore = $ignore", "Can update only Ticker Job")
+    getJobStates(jobId) match {
+      case Seq((_, _: TickerJobState)) =>
+        updateJob[TickerJobState](jobId, { t: TickerJobState =>
+          updateTickerJobState(t, ticker, error, ignore).asInstanceOf[JobState].toJson.prettyPrint
+        }, "$ticker error = $error, ignore = $ignore", "Can update only Ticker Job")
+      case Seq((_, _: TickLoadingJobState)) =>
+        updateJob[TickLoadingJobState](jobId, { t: TickLoadingJobState =>
+          t.copy(status = JobStatuses.FINISHED).asInstanceOf[JobState].toJson.prettyPrint
+        }, "", "Can update only Tick Loading Job")
+    }
+
   }
 
   def removeJob(jobId: UUID): Unit = {

@@ -8,7 +8,8 @@ import serv1.model.ticker.{BarSizes, TickerLoadType, TickerType}
 
 @RunWith(classOf[JUnitRunner])
 class DBUtilSuite extends AnyFunSuite {
-  val tickerLoadType: TickerLoadType = TickerLoadType(TickerType("TEST", "EXC", "STK", 2), BarSizes.MIN15)
+  val tickerLoadType: TickerLoadType = TickerLoadType(TickerType("TEST", "EXC", "STK", 2, Option.empty, Option.empty, Option.empty,
+    Option.empty, Option.empty, Option.empty), BarSizes.MIN15)
   test("test ticket data table name parsing format") {
     val tableName = TickerDataTableNameUtil.formatTableName(tickerLoadType)
     val testTickerLoadType = TickerDataTableNameUtil.parseTableName(tableName).get

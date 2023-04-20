@@ -14,8 +14,8 @@ object TestData {
   val xomTickerType: String = "STK"
   val xomTickerExch: String = "NYSE"
   //val xomTickerExch: String = "SMART"
-  val testTicker: TickerLoadType = TickerLoadType(TickerType("TEST", "EXC", "STK", 2), BarSizes.DAY)
-  val testTicker2: TickerLoadType = TickerLoadType(TickerType("TEST2", "EXC", "STK", 2), BarSizes.MIN15)
+  val testTicker: TickerLoadType = TickerLoadType(TickerType("TEST", "EXC", "STK", 2, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty), BarSizes.DAY)
+  val testTicker2: TickerLoadType = TickerLoadType(TickerType("TEST2", "EXC", "STK", 2, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty), BarSizes.MIN15)
   val testTickers: List[TickerLoadType] = List(testTicker, testTicker2)
   val from: LocalDateTime = LocalDateTime.of(2022, 12, 6, 12, 0)
   val to: LocalDateTime = LocalDateTime.of(2022, 12, 9, 12, 0)

@@ -78,14 +78,14 @@ object TickerDataActor extends Logging {
       }
     } else {
       try {
-        logger.info(s"Blocking write $ticker")
+        logger.debug(s"Blocking write $ticker")
         writeAction()
         if (replyTo != null) {
           replyTo ! WriteSuccessful
         }
       } catch {
         case _: DatabaseException =>
-          logger.info(s"Blocking write unsuccessful $ticker starting timer")
+          logger.warn(s"Blocking write unsuccessful $ticker starting timer")
           timers.startSingleTimer(timerKey, WriteAction(attempt + 1, ticker, writeAction, message, replyTo), calculateRandomDelay())
       }
     }

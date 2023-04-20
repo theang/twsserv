@@ -23,7 +23,19 @@ class TickerTypeTable(tag: Tag) extends Table[TickerTypeDB](tag, "TICKER") {
 
   def prec = column[Int]("PREC")
 
-  def * = (id, name, exchange, typ, barSize, prec) <> ((TickerTypeDB.apply _).tupled, TickerTypeDB.unapply)
+  def localSymbol = column[Option[String]]("LOCAL_SYMBOL")
 
-  def nameIndex = index("IND_NAME", (name, exchange, typ, barSize, prec), unique = true)
+  def strike = column[Option[Int]]("STRIKE")
+
+  def right = column[Option[String]]("RIGHT")
+
+  def multiplier = column[Option[String]]("MULTIPLIER")
+
+  def lastTradeDateOrContractMonth = column[Option[String]]("LAST_TRADE_DATE_OR_CONTRACT_MONTH")
+
+  def currency = column[Option[String]]("CURRENCY")
+
+  def * = (id, name, exchange, typ, barSize, prec, localSymbol, strike, right, multiplier, lastTradeDateOrContractMonth, currency) <> ((TickerTypeDB.apply _).tupled, TickerTypeDB.unapply)
+
+  def nameIndex = index("IND_NAME", (name, exchange, typ, barSize, prec, localSymbol, strike, right, multiplier, lastTradeDateOrContractMonth, currency), unique = true)
 }

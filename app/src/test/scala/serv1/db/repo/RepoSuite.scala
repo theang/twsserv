@@ -6,7 +6,7 @@ import org.scalatestplus.junit.JUnitRunner
 import serv1.db.DB
 import serv1.db.TestData._
 import serv1.db.repo.impl._
-import serv1.db.schema.{ExchangeTable, ScheduledTask, TickerDataErrors}
+import serv1.db.schema.{ExchangeTable, JobTable, ScheduledTask, TickerDataErrors}
 import serv1.model.job.{JobStatuses, TickLoadingJobState}
 import serv1.model.ticker.TickerError
 import serv1.util.LocalDateTimeUtil
@@ -102,6 +102,23 @@ class RepoSuite extends AnyFunSuite with Logging {
       }
     })()
     JobRepo.removeJob(id)
+  }
+
+  test("JobRepo archive test, create job, archive job") {
+    assert(JobRepo.getTickerJobStates(null).size === 0)
+    val idTickerJob = JobRepo.createTickerJob(testTickers, from, to, overwrite = false)
+    JobRepo.updateJob(idTickerJob, testTicker)
+    JobRepo.updateJob(idTickerJob, testTicker2)
+    val idTickLoadingJob = JobRepo.createTickLoadingJob(testTickers)
+    JobRepo.cancelTickLoadingJob(idTickLoadingJob)
+    JobRepo.archiveCompletedJobs()
+    (() => {
+      val tickerJobs = JobRepo.getTickerJobStates(idTickerJob)
+      assert(tickerJobs.isEmpty === true)
+      val tickJobs = JobRepo.getTickerJobStates(idTickerJob)
+      assert(tickJobs.isEmpty === true)
+    })()
+    Await.result(DB.db.run(JobTable.archiveQuery.delete), Duration.Inf)
   }
 
   test("Ticker type repo") {

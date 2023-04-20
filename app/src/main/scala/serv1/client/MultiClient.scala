@@ -5,6 +5,7 @@ import serv1.client.operations.ClientOperationCallbacks
 import serv1.client.operations.ClientOperationCallbacks.{TickBidAskOperationCallback, TickLastOperationCallback}
 import serv1.client.operations.ClientOperationHandlers.ErrorHandler
 import serv1.config.ServConfig
+import serv1.model.ticker.TickerType
 import slick.util.Logging
 
 object MultiClient extends DataClient {
@@ -15,17 +16,14 @@ object MultiClient extends DataClient {
 
   override def loadHistoricalData(from: Long,
                                   to: Long,
-                                  ticker: String,
-                                  exchange: String,
-                                  typ: String,
+                                  tickerType: TickerType,
                                   barSize: Int,
-                                  prec: Int,
                                   cont: ClientOperationCallbacks.HistoricalDataOperationCallback,
                                   error: ErrorHandler): Unit =
-    clients(currentClient).loadHistoricalData(from, to, ticker, exchange, typ, barSize, prec, cont, error)
+    clients(currentClient).loadHistoricalData(from, to, tickerType, barSize, cont, error)
 
-  override def startLoadingTickData(ticker: String, exchange: String, typ: String, contLast: TickLastOperationCallback, contBidAsk: TickBidAskOperationCallback, error: ErrorHandler): (Int, Int) = {
-    clients(currentClient).startLoadingTickData(ticker, exchange, typ, contLast, contBidAsk, error)
+  override def startLoadingTickData(tickerType: TickerType, contLast: TickLastOperationCallback, contBidAsk: TickBidAskOperationCallback, error: ErrorHandler): (Int, Int) = {
+    clients(currentClient).startLoadingTickData(tickerType, contLast, contBidAsk, error)
   }
 
   override def cancelLoadingTickData(reqLastN: Int, reqBidAskN: Int): Unit = {
