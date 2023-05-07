@@ -23,5 +23,6 @@ lazy val backend = (project in file("backend"))
   .settings(
     name := "backend",
     Compile / mainClass := Some("serv1.backend.BackendApp"),
-    libraryDependencies ++= zioDependencies
+    libraryDependencies ++= zioDependencies,
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   ).dependsOn(db)

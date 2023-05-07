@@ -58,7 +58,7 @@ class TickLoadingRest(loadDataActor: ActorRef[Message])(implicit system: ActorSy
     path("tickLoading") {
       delete {
         entity(as[StopLoadingTickDataRequest]) { request =>
-          loadDataActor ! request
+          loadDataActor.ask(replyTo => StopLoadingTickDataRequestRef(request, replyTo))
           complete(StatusCodes.NoContent, HttpEntity.Empty)
         }
       }

@@ -60,6 +60,7 @@ object Dependencies {
   val zioConfigVersion = "4.0.0-RC14"
   val zioHttpVersion = "3.0.0-RC1"
   val zioQuillVersion = "4.6.0"
+  val zioLoggingVersion = "2.1.11"
 
   val zioDependencies: Seq[ModuleID] = Seq(
     "dev.zio" %% "zio" % zioVersion,
@@ -71,5 +72,10 @@ object Dependencies {
     "dev.zio" %% "zio-config-yaml" % zioConfigVersion,
     "io.getquill" %% "quill-jdbc-zio" % zioQuillVersion,
     "org.postgresql" % "postgresql" % pgsqlVersion,
+    //"dev.zio" %% "zio-logging" % zioLoggingVersion,
+    "dev.zio" %% "zio-logging-slf4j" % zioLoggingVersion,
+    "dev.zio" %% "zio-test-junit" % zioVersion % Test,
+    "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
+    "dev.zio" %% "zio-test-magnolia" % zioVersion % Test
   )
 }

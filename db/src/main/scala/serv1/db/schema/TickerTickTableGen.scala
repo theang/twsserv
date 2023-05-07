@@ -44,6 +44,8 @@ class TickerTickLastTableGen(tt: TickerLoadType) {
 
     def time = column[Long]("TIME")
 
+    def nanoTime = column[Long]("NANO_TIME")
+
     def price = column[Double]("PRICE")
 
     def size = column[Double]("SIZE")
@@ -56,7 +58,7 @@ class TickerTickLastTableGen(tt: TickerLoadType) {
 
     def unreported = column[Boolean]("UNREPORTED")
 
-    def * = (id, time, price, size, exch, spec, pastLimit, unreported) <> (TickerTickLast.tupled, TickerTickLast.unapply)
+    def * = (id, time, nanoTime, price, size, exch, spec, pastLimit, unreported) <> (TickerTickLast.tupled, TickerTickLast.unapply)
 
     def timeIndex = index(s"IND_TIME_$tableName", time, unique = false)
   }
@@ -72,6 +74,8 @@ class TickerTickBidAskTableGen(tt: TickerLoadType) {
 
     def time = column[Long]("TIME")
 
+    def nanoTime = column[Long]("NANO_TIME")
+
     def bidPrice = column[Double]("BID_PRICE")
 
     def askPrice = column[Double]("ASK_PRICE")
@@ -84,7 +88,7 @@ class TickerTickBidAskTableGen(tt: TickerLoadType) {
 
     def askPastHigh = column[Boolean]("ASK_PAST_HIGH")
 
-    def * = (id, time, bidPrice, askPrice, bidSize, askSize, bidPastLow, askPastHigh) <> (TickerTickBidAsk.tupled, TickerTickBidAsk.unapply)
+    def * = (id, time, nanoTime, bidPrice, askPrice, bidSize, askSize, bidPastLow, askPastHigh) <> (TickerTickBidAsk.tupled, TickerTickBidAsk.unapply)
 
     def timeIndex = index(s"IND_TIME_$tableName", time, unique = false)
   }
