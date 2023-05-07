@@ -8,6 +8,7 @@ import serv1.client.operations.{ClientOperationCallbacks, ClientOperationHandler
 import serv1.config.ServConfig
 import serv1.db.schema.{TickerTickBidAsk, TickerTickLast}
 import serv1.model.ticker.TickerType
+import serv1.time.HighResTime
 import serv1.util.{LocalDateTimeUtil, PowerOperator}
 import slick.util.Logging
 
@@ -504,13 +505,13 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
     logger.debug("historicalTicksLast response")
 
   override def tickByTickAllLast(i: Int, i1: Int, l: Long, v: Double, i2: Decimal, tickAttribLast: TickAttribLast, s: String, s1: String): Unit = {
-    ClientOperationHandlers.handleData(i, TickerTickLastExchange(TickerTickLast(0, l, v, i2.value().doubleValue(),
+    ClientOperationHandlers.handleData(i, TickerTickLastExchange(TickerTickLast(0, l, HighResTime.currentNanos, v, i2.value().doubleValue(),
       0, s1, tickAttribLast.pastLimit(), tickAttribLast.unreported()), s), last = false)
   }
 
 
   override def tickByTickBidAsk(i: Int, l: Long, v: Double, v1: Double, d: Decimal, d1: Decimal, tickAttribBidAsk: TickAttribBidAsk): Unit =
-    ClientOperationHandlers.handleData(i, TickerTickBidAsk(0, l, v, v1, d.value().doubleValue(), d1.value().doubleValue(), tickAttribBidAsk.bidPastLow(),
+    ClientOperationHandlers.handleData(i, TickerTickBidAsk(0, l, HighResTime.currentNanos, v, v1, d.value().doubleValue(), d1.value().doubleValue(), tickAttribBidAsk.bidPastLow(),
       tickAttribBidAsk.askPastHigh()), last = false)
 
   override def tickByTickMidPoint(i: Int, l: Long, v: Double): Unit =

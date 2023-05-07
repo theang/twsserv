@@ -92,10 +92,12 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
   }
 
   def findTickLoadingJobByLoadType(tickerLoadType: TickerLoadType): Seq[UUID] = {
-    getTickerJobs[TickLoadingJobState](null).filter {
-      case (_, tickerJobState: TickLoadingJobState) =>
-        tickerJobState.status == JobStatuses.IN_PROGRESS && tickerJobState.tickers.contains(tickerLoadType)
-      case _ => false
+    getTickerJobs[TickLoadingJobState](null).filter { tickerJob: AnyRef =>
+      tickerJob match {
+        case (_, tickerJobState: TickLoadingJobState) =>
+          tickerJobState.status == JobStatuses.IN_PROGRESS && tickerJobState.tickers.contains(tickerLoadType)
+        case _ => false
+      }
     }.map {
       case (id, _) =>
         id
@@ -129,9 +131,11 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
   }
 
   def getTickerJobStates(jobId: UUID): Seq[TickerJobState] = {
-    getTickerJobs[TickerJobState](jobId).map {
-      case (_, tickerJobState: TickerJobState) =>
-        tickerJobState
+    getTickerJobs[TickerJobState](jobId).map { jobState: AnyRef =>
+      jobState match {
+        case (_, tickerJobState: TickerJobState) =>
+          tickerJobState
+      }
     }
   }
 

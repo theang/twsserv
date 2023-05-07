@@ -49,10 +49,13 @@ object TickerTickRepo extends Logging with BaseRepo with TickerTickRepoIntf {
   def writeLast(ticker: TickerLoadType, data: Seq[TickerTickLast]): Unit = {
     createTableIfNotExists(ticker) match {
       case Some((tickerTickLastQuery, _)) =>
-        val minTime = data.map(_.time).min
-        val maxTime = data.map(_.time).max
-        val timesAlreadyInDb = Await.result(DB.db.run(tickerTickLastQuery.filter { td => td.time >= minTime && td.time <= maxTime }.map(_.time).result), readDuration).toSet
-        val listToInsert = data.filter { ttl => !timesAlreadyInDb.contains(ttl.time) }
+        var listToInsert = data
+        if (data.nonEmpty) {
+          val minTime = data.map(_.time).min
+          val maxTime = data.map(_.time).max
+          val timesAlreadyInDb = Await.result(DB.db.run(tickerTickLastQuery.filter { td => td.time >= minTime && td.time <= maxTime }.map(_.time).result), readDuration).toSet
+          listToInsert = data.filter { ttl => !timesAlreadyInDb.contains(ttl.time) }
+        }
         val action = tickerTickLastQuery.asInstanceOf[TableQuery[_ <: Table[TickerTickLast]]] ++= listToInsert
         writeWithCheck(listToInsert.size, action, writeDuration)
       case _ =>
