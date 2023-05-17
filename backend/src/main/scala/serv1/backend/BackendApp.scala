@@ -33,7 +33,7 @@ object BackendApp extends ZIOAppDefault {
       )
 
   def server(httpServerConfig: HttpServerConfig): ZIO[Any, Throwable, Nothing] = {
-    Server.serve[BackendEnv](backendMapError)
+    Server.serve(backendMapError @@ HttpAppMiddleware.cors(HttpServerConfig.corsConfig(httpServerConfig)))
       .provide(Server.defaultWith(_.binding(httpServerConfig.host, httpServerConfig.port)),
         Quill.Postgres.fromNamingStrategy[CompositeNamingStrategy3[SnakeCase, UpperCase, Escape]](CompositeNamingStrategy3(SnakeCase, UpperCase, Escape)),
         Quill.DataSource.fromPrefix("postgres"),

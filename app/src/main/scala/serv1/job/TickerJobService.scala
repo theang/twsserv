@@ -22,7 +22,8 @@ class TickerJobService(client: DataClient,
                        tickerDataActor: ActorRef[TickerDataActor.Message],
                        exchangeRepo: ExchangeRepoIntf) extends Logging {
 
-  var ERROR_CODES_TO_EXCLUDE_TICKERS_FROM_FURTHER_PROCESSING: Set[Int] = Set(TWSClientErrors.CONTRACT_DESCRIPTION_IS_AMBIGUOUS)
+  var ERROR_CODES_TO_EXCLUDE_TICKERS_FROM_FURTHER_PROCESSING: Set[Int] = Set(TWSClientErrors.CONTRACT_DESCRIPTION_IS_AMBIGUOUS,
+    TWSClientErrors.NO_HISTORICAL_MARKET_DATA)
 
   var tickerJobActor: Option[ActorRef[TickerJobActor.JobActorMessage]] = None
 
