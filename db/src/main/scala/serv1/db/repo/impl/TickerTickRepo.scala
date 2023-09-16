@@ -46,11 +46,11 @@ object TickerTickRepo extends Logging with BaseRepo with TickerTickRepoIntf {
   }
 
 
-  def writeLast(ticker: TickerLoadType, data: Seq[TickerTickLast]): Unit = {
+  def writeLast(ticker: TickerLoadType, data: Seq[TickerTickLast], checkAlreadyInDb: Boolean): Unit = {
     createTableIfNotExists(ticker) match {
       case Some((tickerTickLastQuery, _)) =>
         var listToInsert = data
-        if (data.nonEmpty) {
+        if (checkAlreadyInDb && data.nonEmpty) {
           val minTime = data.map(_.time).min
           val maxTime = data.map(_.time).max
           val timesAlreadyInDb = Await.result(DB.db.run(tickerTickLastQuery.filter { td => td.time >= minTime && td.time <= maxTime }.map(_.time).result), readDuration).toSet
@@ -63,11 +63,11 @@ object TickerTickRepo extends Logging with BaseRepo with TickerTickRepoIntf {
     }
   }
 
-  def writeBidAsk(ticker: TickerLoadType, data: Seq[TickerTickBidAsk]): Unit = {
+  def writeBidAsk(ticker: TickerLoadType, data: Seq[TickerTickBidAsk], checkAlreadyInDb: Boolean): Unit = {
     createTableIfNotExists(ticker) match {
       case Some((_, tickerTickBidAskQuery)) =>
         var listToInsert = data
-        if (data.nonEmpty) {
+        if (checkAlreadyInDb && data.nonEmpty) {
           val minTime = data.map(_.time).min
           val maxTime = data.map(_.time).max
           val timesAlreadyInDb = Await.result(DB.db.run(tickerTickBidAskQuery.filter { td => td.time >= minTime && td.time <= maxTime }.map(_.time).result), readDuration).toSet
