@@ -116,7 +116,7 @@ object TickerDataActor extends Logging {
             timerKey.getAndIncrement(),
             attempt,
             () => {
-              tickerTickRepo.writeLast(ticker, tickLastData)
+              tickerTickRepo.writeLast(ticker, tickLastData, checkAlreadyInDb = false)
             },
             ticker,
             message = s"loading ${tickLastData.size} items of tick last price data",
@@ -128,7 +128,7 @@ object TickerDataActor extends Logging {
             timerKey.getAndIncrement(),
             attempt,
             () => {
-              tickerTickRepo.writeBidAsk(ticker, tickBidAskData)
+              tickerTickRepo.writeBidAsk(ticker, tickBidAskData, checkAlreadyInDb = false)
             },
             ticker,
             message = s"loading ${tickBidAskData.size} items of tick bid-ask data",

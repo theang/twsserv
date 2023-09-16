@@ -4,9 +4,9 @@ import serv1.db.schema.{TickerTickBidAsk, TickerTickLast}
 import serv1.model.ticker.TickerLoadType
 
 trait TickerTickRepoIntf {
-  def writeLast(ticker: TickerLoadType, data: Seq[TickerTickLast]): Unit
+  def writeLast(ticker: TickerLoadType, data: Seq[TickerTickLast], checkAlreadyInDb: Boolean): Unit
 
-  def writeBidAsk(ticker: TickerLoadType, data: Seq[TickerTickBidAsk]): Unit
+  def writeBidAsk(ticker: TickerLoadType, data: Seq[TickerTickBidAsk], checkAlreadyInDb: Boolean): Unit
 
   def readLast(ticker: TickerLoadType, timeFrom: Long, timeTo: Long): Seq[TickerTickLast]
 
