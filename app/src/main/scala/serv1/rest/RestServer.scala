@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives.{complete, get, path}
 import akka.http.scaladsl.server.RouteConcatenation
 import serv1.Configuration
-import serv1.client.MultiClient
+import serv1.client.{MultiClient, PurgeActor}
 import serv1.db.repo.impl._
 import serv1.db.{ArchiveFinishedJobsActor, TickerDataActor}
 import serv1.job._
@@ -53,6 +53,7 @@ object RestServer extends RouteConcatenation {
     val historicalDataActorRef = ctx.spawn(HistoricalDataActor(TickerDataRepo), "historicalDataActor")
     val restartLoadActor = ctx.spawn(RestartLoadActor(JobRepo, tickerActorRef), "restartLoadActor")
     val archiveFinishedJobsActor = ctx.spawn(ArchiveFinishedJobsActor(JobRepo), name = "archiveFinishedJobsActor")
+    val purgeDataActor = ctx.spawn(PurgeActor(), name = "purgeDataActor")
     val routes = {
       path("hello") {
         get {

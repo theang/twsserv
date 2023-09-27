@@ -18,6 +18,8 @@ trait ClientOperationAdder[DataType] {
   def getSize: Int
 
   def executeCont(last: Boolean): Unit
+
+  def purgeable: Boolean
 }
 
 abstract case class ClientOperation[DataType, AccType, Callback](contP: Callback, dataP: AccType) extends ClientOperationAdder[DataType] {
@@ -37,7 +39,7 @@ trait DataOperation
 
 class HistoricalDataClientOperation(contP: ClientOperationCallbacks.HistoricalDataOperationCallback,
                                     dataP: ArrayBuffer[HistoricalData], precMultiplier: Int,
-                                    dateFormat: Int, pChunkSize: Int)(implicit executionContext: ExecutionContext)
+                                    dateFormat: Int, pChunkSize: Int, isPurgeable: Boolean)(implicit executionContext: ExecutionContext)
   extends ClientOperation[Bar, ArrayBuffer[HistoricalData], ClientOperationCallbacks.HistoricalDataOperationCallback](contP, dataP) with DataOperation {
 
   private val converter = HistoricalDataConverter.fromPrecAndDateFormat(precMultiplier, dateFormat)
@@ -59,6 +61,10 @@ class HistoricalDataClientOperation(contP: ClientOperationCallbacks.HistoricalDa
 
   override def getSize: Int = {
     data.size
+  }
+
+  override def purgeable: Boolean = {
+    isPurgeable
   }
 }
 
@@ -83,6 +89,10 @@ class TickLastDataClientOperation(contP: ClientOperationCallbacks.TickLastOperat
   override def getSize: Int = {
     data.size
   }
+
+  override def purgeable: Boolean = {
+    true
+  }
 }
 
 class TickBidAskDataClientOperation(contP: ClientOperationCallbacks.TickBidAskOperationCallback, dataP: ArrayBuffer[TickerTickBidAsk],
@@ -105,5 +115,9 @@ class TickBidAskDataClientOperation(contP: ClientOperationCallbacks.TickBidAskOp
 
   override def getSize: Int = {
     data.size
+  }
+
+  override def purgeable: Boolean = {
+    true
   }
 }

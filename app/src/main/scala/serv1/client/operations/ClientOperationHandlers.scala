@@ -40,7 +40,7 @@ object ClientOperationHandlers extends Logging {
                                cont: ClientOperationCallbacks.HistoricalDataOperationCallback,
                                error: ErrorHandler): Unit = {
     historicalData.addOne((reqN,
-      new HistoricalDataClientOperation(cont, new ArrayBuffer[HistoricalData](), precMultiplier, dateFormat, LOAD_CHUNK_SIZE)))
+      new HistoricalDataClientOperation(cont, new ArrayBuffer[HistoricalData](), precMultiplier, dateFormat, LOAD_CHUNK_SIZE, false)))
     errorHandlers.addOne((reqN, error))
   }
 
@@ -60,6 +60,32 @@ object ClientOperationHandlers extends Logging {
     errorHandlers.addOne((reqN, error))
   }
 
+  def purgeData(reqN: Int): Unit = {
+    historicalData.get(reqN) match {
+      case Some(dataOp) =>
+        dataOp match {
+          case histDataOp: ClientOperationAdder[?] =>
+            if (histDataOp.getSize > 0 && histDataOp.purgeable) {
+              histDataOp.synchronized {
+                if (histDataOp.getSize > 0) {
+                  histDataOp.executeCont(false)
+                }
+              }
+            }
+          case _ => logger.warn(s"purgeData: reqN = $reqN;" +
+            s" no ClientOperationAdder found skipping")
+        }
+      case None =>
+        logger.warn(s"purgeHistoricalData: reqN = $reqN;" +
+          s" no request found by number skipping")
+    }
+  }
+
+  def purgeAllData(): Unit = {
+    historicalData.foreachEntry {
+      (ind, _) => purgeData(ind)
+    }
+  }
   def handleData[DatumType](reqN: Int, datum: DatumType, last: Boolean): Unit = {
     historicalData.get(reqN) match {
       case Some(dataOp) =>
