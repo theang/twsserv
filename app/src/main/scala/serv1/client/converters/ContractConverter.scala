@@ -13,6 +13,7 @@ object ContractConverter {
     contract.symbol(tickerType.name)
     contract.currency("USD")
     tickerType.lastTradeDateOrContractMonth.foreach(contract.lastTradeDateOrContractMonth(_))
+    tickerType.primaryExchange.foreach(contract.primaryExch(_))
     contract
   }
 }

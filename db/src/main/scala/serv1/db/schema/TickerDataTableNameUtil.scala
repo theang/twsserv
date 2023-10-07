@@ -23,7 +23,7 @@ object TickerDataTableNameUtil {
       try {
         val barSize = BarSizes.withName(barSizeStr)
         Some(TickerLoadType(TickerType(name, exchange, typ, Configuration.defaultPrecision, Option.empty, Option.empty, Option.empty, Option.empty, Option(futureDateStr),
-          Option.empty), barSize))
+          Option.empty, Option.empty), barSize))
       } catch {
         case _: NoSuchElementException =>
           None

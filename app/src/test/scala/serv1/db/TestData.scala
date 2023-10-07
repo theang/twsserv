@@ -1,7 +1,9 @@
 package serv1.db
 
+import serv1.db.schema.TickerTypeDB
 import serv1.model.HistoricalData
 import serv1.model.job.{JobStatuses, TickLoadingJobState, TickerJobState}
+import serv1.model.ticker.BarSizes.BarSize
 import serv1.model.ticker.{BarSizes, TickerLoadType, TickerType}
 import serv1.util.LocalDateTimeUtil
 
@@ -14,8 +16,16 @@ object TestData {
   val xomTickerType: String = "STK"
   val xomTickerExch: String = "NYSE"
   //val xomTickerExch: String = "SMART"
-  val testTicker: TickerLoadType = TickerLoadType(TickerType("TEST", "EXC", "STK", 2, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty), BarSizes.DAY)
-  val testTicker2: TickerLoadType = TickerLoadType(TickerType("TEST2", "EXC", "STK", 2, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty), BarSizes.MIN15)
+  def createTickerTypeDB(id: Int, name: String, exchange: String, typ: String, barSize: BarSize, prec: Int, localSymbol: Option[String] = Option.empty,
+                         strike: Option[Int] = Option.empty, right: Option[String] = Option.empty, multiplier: Option[String] = Option.empty,
+                         lastTradeDateOrContractMonth: Option[String] = Option.empty, currency: Option[String] = Option.empty, primaryExchange: Option[String] = Option.empty): TickerTypeDB = TickerTypeDB(id, name, exchange, typ, barSize, prec, localSymbol, strike, right, multiplier, lastTradeDateOrContractMonth, currency, primaryExchange)
+
+  def createTickerType(name: String, exchange: String, typ: String, prec: Int, localSymbol: Option[String] = Option.empty,
+                       strike: Option[Int] = Option.empty, right: Option[String] = Option.empty, multiplier: Option[String] = Option.empty,
+                       lastTradeDateOrContractMonth: Option[String] = Option.empty, currency: Option[String] = Option.empty, primaryExchange: Option[String] = Option.empty): TickerType = TickerType(name, exchange, typ, prec, localSymbol, strike, right, multiplier, lastTradeDateOrContractMonth, currency, primaryExchange)
+
+  val testTicker: TickerLoadType = TickerLoadType(TickerType("TEST", "EXC", "STK", 2, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty), BarSizes.DAY)
+  val testTicker2: TickerLoadType = TickerLoadType(TickerType("TEST2", "EXC", "STK", 2, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty), BarSizes.MIN15)
   val testTickers: List[TickerLoadType] = List(testTicker, testTicker2)
   val from: LocalDateTime = LocalDateTime.of(2022, 12, 6, 12, 0)
   val to: LocalDateTime = LocalDateTime.of(2022, 12, 9, 12, 0)

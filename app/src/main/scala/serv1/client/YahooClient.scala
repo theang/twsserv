@@ -101,4 +101,8 @@ object YahooClient extends DataClient with Logging with PowerOperator {
                                     contBidAsk: ClientOperationCallbacks.TickBidAskOperationCallback, error: ErrorHandler): (Int, Int) = ???
 
   override def cancelLoadingTickData(reqLastN: Int, reqBidAskN: Int): Unit = ???
+
+  def main(args: Array[String]): Unit = {
+
+  }
 }
