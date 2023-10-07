@@ -28,6 +28,18 @@ upgrade_1_to_2: |+
   DROP INDEX "IND_NAME";
   CREATE UNIQUE INDEX ON "TICKER" ("NAME", "EXCHANGE", "TYP", "BAR_SIZE", "PREC", "LOCAL_SYMBOL", 
                                    "STRIKE", "RIGHT", "MULTIPLIER", "LAST_TRADE_DATE_OR_CONTRACT_MONTH", 
-                                   "MULTIPLIER"); 
+                                   "CURRENCY"); 
+  END $$ LANGUAGE 'plpgsql';
+  COMMIT;
+upgrade_2_to_3: |+
+  START TRANSACTION;
+  DO $$
+  BEGIN
+  ALTER TABLE "TICKER" 
+  ADD COLUMN "PRIMARY_EXCHANGE" varchar NULL;
+  DROP INDEX "TICKER_NAME_EXCHANGE_TYP_BAR_SIZE_PREC_LOCAL_SYMBOL_STRIKE__idx";
+  CREATE UNIQUE INDEX "IND_NAME" ON "TICKER" ("NAME", "EXCHANGE", "TYP", "BAR_SIZE", "PREC", "LOCAL_SYMBOL", 
+                                   "STRIKE", "RIGHT", "MULTIPLIER", "LAST_TRADE_DATE_OR_CONTRACT_MONTH", 
+                                   "CURRENCY", "PRIMARY_EXCHANGE"); 
   END $$ LANGUAGE 'plpgsql';
   COMMIT;
