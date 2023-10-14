@@ -12,15 +12,19 @@ import serv1.client.{MultiClient, PurgeActor}
 import serv1.db.repo.impl._
 import serv1.db.{ArchiveFinishedJobsActor, TickerDataActor}
 import serv1.job._
+import serv1.rest.actors.earnings.EarningsLoadActor
 import serv1.rest.actors.historical.HistoricalDataActor
 import serv1.rest.actors.loaddata
 import serv1.rest.actors.schedule.ScheduleActor
 import serv1.rest.actors.ticker.TickerJobControlActor
+import serv1.rest.controllers.earnings.EarningsLoadRest
 import serv1.rest.controllers.loaddata.LoadDataRest
 import serv1.rest.controllers.schedule.ScheduleRest
 import serv1.rest.controllers.tickdata.TickLoadingRest
 import serv1.rest.controllers.ticker.TickerJobControlRest
 import serv1.rest.services.loaddata.LoadService
+import serv1.rest.services.loaddata.earnings.EarningsLoadService
+import serv1.schedule.{ScheduledJobActor, ScheduledJobService}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -48,10 +52,15 @@ object RestServer extends RouteConcatenation {
     val tickerJobControlActorRef = ctx.spawn(TickerJobControlActor(ScheduledTaskRepo, TickerTrackingRepo, TickerTypeRepo), "tickerJobControlActor")
     val tickerTrackerJobService = new TickerTrackerJobService(loadService,
       ScheduledTaskRepo, TickerTypeRepo, TickerTrackingRepo, TickerDataRepo)
-    val tickerTrackerJobActorRef = ctx.spawn(TickerTrackerJobActor(tickerTrackerJobService), "tickerTrackerJobActor")
+    val earningsJobService = new EarningsJobService(MultiClient, JobRepo, EventRepo)
+    val earningsJobActor = ctx.spawn(EarningsJobActor(JobRepo, earningsJobService), "earningsJobActor")
+    val earningsLoadService = new EarningsLoadService(earningsJobActor, JobRepo)
+    val earningsLoadActor = ctx.spawn(EarningsLoadActor(earningsLoadService), "earningsLoadActor")
+    val scheduledJobService = new ScheduledJobService(tickerTrackerJobService, earningsLoadService, ScheduledTaskRepo)
+    val scheduledJobActorRef = ctx.spawn(ScheduledJobActor(scheduledJobService), "scheduledJobActor")
     val scheduleActorRef = ctx.spawn(ScheduleActor(ScheduledTaskRepo, tickerTrackerJobService), "scheduleActor")
     val historicalDataActorRef = ctx.spawn(HistoricalDataActor(TickerDataRepo), "historicalDataActor")
-    val restartLoadActor = ctx.spawn(RestartLoadActor(JobRepo, tickerActorRef), "restartLoadActor")
+    val restartLoadActor = ctx.spawn(RestartLoadActor(JobRepo, tickerActorRef, earningsJobActor), "restartLoadActor")
     val archiveFinishedJobsActor = ctx.spawn(ArchiveFinishedJobsActor(JobRepo), name = "archiveFinishedJobsActor")
     val purgeDataActor = ctx.spawn(PurgeActor(), name = "purgeDataActor")
     val routes = {
@@ -64,7 +73,8 @@ object RestServer extends RouteConcatenation {
       new LoadDataRest(loadDataActorRef, checkJobActorRef, historicalDataActorRef).routes ~
       new ScheduleRest(scheduleActorRef).routes ~
       new TickerJobControlRest(tickerJobControlActorRef).routes ~
-      new TickLoadingRest(loadDataActorRef).routes
+      new TickLoadingRest(loadDataActorRef).routes ~
+      new EarningsLoadRest(earningsLoadService).routes
 
     val serverBinding: Future[Http.ServerBinding] =
       Http().newServerAt(host, port).bind(routes)

@@ -7,7 +7,7 @@ build
 upload
 download
 security
-secrets.yaml
+secrets.conf
 
 data/db/**
 data/*.xz

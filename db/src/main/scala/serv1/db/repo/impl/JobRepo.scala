@@ -4,7 +4,7 @@ import serv1.db.DBSelectRawForUpdate.{AlreadyLocked, NothingToLock, Success}
 import serv1.db.repo.intf.JobRepoIntf
 import serv1.db.schema.{Job, JobTable}
 import serv1.db.{Configuration, DB, DBJsonFormats, DBSelectRawForUpdate}
-import serv1.model.job.{JobState, JobStatuses, TickLoadingJobState, TickerJobState}
+import serv1.model.job._
 import serv1.model.ticker.{TickerError, TickerLoadType}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
@@ -42,6 +42,13 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
     Await.result(DB.db.run(DBIO.seq(JobTable.query += Job(id,
       TickerJobState(JobStatuses.IN_PROGRESS,
         tickers = tickersToLoad.toList, List.empty, List.empty, List.empty, from, to, overwrite).asInstanceOf[JobState].toJson.prettyPrint))), Duration.Inf)
+    id
+  }
+
+  def createEarningsJob(from: LocalDateTime, to: LocalDateTime): UUID = {
+    val id = UUID.randomUUID()
+    Await.result(DB.db.run(DBIO.seq(JobTable.query += Job(id,
+      EarningsLoadingJobState(JobStatuses.IN_PROGRESS, from, to, from).asInstanceOf[JobState].toJson.prettyPrint))), Duration.Inf)
     id
   }
 
@@ -89,6 +96,12 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
     updateJob[TickLoadingJobState](tickLoadingJobId, { t: TickLoadingJobState =>
       t.copy(status = JobStatuses.FINISHED).asInstanceOf[JobState].toJson.prettyPrint
     }, "", "Can update only Tick Loading Job")
+  }
+
+  def finishEarningsLoadingJob(earningsLoadingJobId: UUID): Boolean = {
+    updateJob[EarningsLoadingJobState](earningsLoadingJobId, { t: EarningsLoadingJobState =>
+      t.copy(status = JobStatuses.FINISHED).asInstanceOf[JobState].toJson.prettyPrint
+    }, "", "Can update only Earnings Loading Job")
   }
 
   def findTickLoadingJobByLoadType(tickerLoadType: TickerLoadType): Seq[UUID] = {
@@ -145,6 +158,13 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
         jobStatuses.contains(tickerJobState.status)
     }
   }
+
+  def updateEarningsLoadingJob(earningsLoadingJobId: UUID, current: LocalDateTime): Boolean = {
+    updateJob[EarningsLoadingJobState](earningsLoadingJobId, { t: EarningsLoadingJobState =>
+      t.copy(current = current).asInstanceOf[JobState].toJson.prettyPrint
+    }, "", "Can update only Earnings Loading Job")
+  }
+
 
   def updateTickerJobState(t: TickerJobState, ticker: TickerLoadType, error: Option[String], ignore: Boolean): TickerJobState = {
     // remove ticker only when no error of forced to ignore
