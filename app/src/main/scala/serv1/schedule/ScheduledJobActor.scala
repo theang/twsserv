@@ -1,4 +1,4 @@
-package serv1.job
+package serv1.schedule
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
@@ -6,7 +6,7 @@ import serv1.util.LocalDateTimeUtil
 
 import scala.concurrent.duration._
 
-object TickerTrackerJobActor {
+object ScheduledJobActor {
   val DELAY: FiniteDuration = 30.seconds
   val CALL_EVERY: FiniteDuration = 60.seconds
 
@@ -20,7 +20,7 @@ object TickerTrackerJobActor {
 
   case object TimerKey
 
-  def apply(tickerTrackerJobService: TickerTrackerJobService): Behavior[Message] = {
+  def apply(scheduledJobService: ScheduledJobService): Behavior[Message] = {
     Behaviors.withTimers {
       timers =>
         timers.startTimerWithFixedDelay(TimerKey, CheckTrackedTickers, DELAY, CALL_EVERY)
@@ -30,7 +30,7 @@ object TickerTrackerJobActor {
               case GetStatus =>
                 Behaviors.same
               case CheckTrackedTickers =>
-                tickerTrackerJobService.runCurrentTrackingJobs(LocalDateTimeUtil.toEpoch(LocalDateTimeUtil.now()))
+                scheduledJobService.runCurrentScheduledJobs(LocalDateTimeUtil.toEpoch(LocalDateTimeUtil.now()))
                 Behaviors.same
             }
         }

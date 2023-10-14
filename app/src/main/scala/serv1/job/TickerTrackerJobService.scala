@@ -5,7 +5,7 @@ import serv1.client.converters.BarSizeConverter
 import serv1.db.repo.intf.{ScheduledTaskRepoIntf, TickerDataRepoIntf, TickerTrackingRepoIntf, TickerTypeRepoIntf}
 import serv1.model.ticker.BarSizes.{BarSize, DAY, HOUR, MIN15}
 import serv1.rest.services.loaddata.LoadService
-import serv1.util.{CronUtil, LocalDateTimeUtil}
+import serv1.util.LocalDateTimeUtil
 import slick.util.Logging
 
 class TickerTrackerJobService(loadService: LoadService,
@@ -54,17 +54,5 @@ class TickerTrackerJobService(loadService: LoadService,
         LocalDateTimeUtil.fromEpoch(currentEpoch),
         overwrite = true)
     }
-  }
-
-  def runCurrentTrackingJobs(currentEpoch: Long): Unit = {
-    scheduledTaskRepoIntf.getScheduledTasksBeforeNextRun(currentEpoch).foreach(scheduledTask => {
-      val scheduleName = scheduledTask.name
-      if (tickerTrackerScheduleEnabled) {
-        scheduledTaskRepoIntf.updateNextRun(scheduleName, CronUtil.findNextRun(currentEpoch, scheduledTask.schedule))
-        runTrackingJob(currentEpoch, scheduleName, scheduledTask.id)
-      } else {
-        logger.info(s"serv1.job.TickerTrackerJobService.tickerTrackerScheduleEnabled is disabled, job $scheduleName is not run, and next run: ${LocalDateTimeUtil.fromEpoch(scheduledTask.nextRun)} is not updated")
-      }
-    })
   }
 }

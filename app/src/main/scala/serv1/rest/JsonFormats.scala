@@ -4,6 +4,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.DateTime
 import serv1.db.DBJsonFormats
 import serv1.model.HistoricalData
+import serv1.rest.actors.earnings.EarningsLoadActor.{EarningsLoadRequest, EarningsLoadResponse, StopEarningsLoadRequest, StopEarningsLoadResponse}
 import serv1.rest.actors.historical.HistoricalDataActor.{HistoricalDataResponse, HistoricalDataValues}
 import serv1.rest.actors.loaddata.LoadDataActor._
 import serv1.rest.actors.schedule.ScheduleActor._
@@ -61,5 +62,10 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol with DBJsonF
   implicit val startLoadingTickDataRequestFormat: RootJsonFormat[StartLoadingTickDataRequest] = jsonFormat1(StartLoadingTickDataRequest)
   implicit val startLoadingTickDataResponseFormat: RootJsonFormat[StartLoadingTickDataResponse] = jsonFormat1(StartLoadingTickDataResponse)
   implicit val stopLoadingTickDataRequestFormat: RootJsonFormat[StopLoadingTickDataRequest] = jsonFormat1(StopLoadingTickDataRequest)
+
+  implicit val earningsLoadRequest: RootJsonFormat[EarningsLoadRequest] = jsonFormat2(EarningsLoadRequest)
+  implicit val stopEarningsLoadRequest: RootJsonFormat[StopEarningsLoadRequest] = jsonFormat1(StopEarningsLoadRequest)
+  implicit val earningsLoadResponse: RootJsonFormat[EarningsLoadResponse] = jsonFormat1(EarningsLoadResponse)
+  implicit val stopEarningsLoadResponse: RootJsonFormat[StopEarningsLoadResponse] = jsonFormat1(StopEarningsLoadResponse)
 
 }

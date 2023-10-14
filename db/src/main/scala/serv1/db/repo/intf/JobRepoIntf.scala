@@ -12,6 +12,8 @@ trait JobRepoIntf {
 
   def createTickerJob(tickersToLoad: Seq[TickerLoadType], from: LocalDateTime, to: LocalDateTime, overwrite: Boolean): UUID
 
+  def createEarningsJob(from: LocalDateTime, to: LocalDateTime): UUID
+
   def getTickerJobsByStates[T <: JobState](jobStatuses: Set[JobStatuses.JobStatus]): Seq[(UUID, T)]
 
   def getTickerJobStates(jobId: UUID): Seq[TickerJobState]
@@ -27,6 +29,10 @@ trait JobRepoIntf {
   def updateJob(jobId: UUID, ticker: TickerLoadType): Boolean
 
   def removeJob(jobId: UUID): Unit
+
+  def updateEarningsLoadingJob(earningsLoadingJobId: UUID, current: LocalDateTime): Boolean
+
+  def finishEarningsLoadingJob(earningsLoadingJobId: UUID): Boolean
 
   def cancelTickLoadingJob(tickLoadingJobId: UUID): Boolean
 

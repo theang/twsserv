@@ -12,13 +12,16 @@ class EventTable(tag: Tag) extends Table[Event](tag, _tableName = "EVENT") {
 
   def typ = column[String]("TYP")
 
+  def symbol = column[String]("SYMBOL")
+
   def time = column[Long]("TIME")
 
   def info = column[String]("INFO")
 
-  def * = (id, typ, time, info) <> (Event.tupled, Event.unapply)
+  def * = (id, typ, symbol, time, info) <> (Event.tupled, Event.unapply)
 
   def indexTypTime = index("IND_EVENT_TYP_TIME", (typ, time))
 
+  def indexTypSymbolTime = index("IND_EVENT_TYP_SYMBOL_TIME", (typ, symbol, time), unique = true)
   def indexTime = index("IND_EVENT_TIME", time)
 }

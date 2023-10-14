@@ -20,6 +20,8 @@ object YahooClient extends DataClient with Logging with PowerOperator {
   val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
   var config: Config = ServConfig.config.getConfig("yahooClient")
   var baseUrl: String = config.getString("baseUrl")
+  var earningsUrl: String = config.getString("earningsUrl")
+  var baseStockUrl: String = config.getString("baseStockUrl")
 
   def formatDate(date: String): Long = {
     LocalDateTimeUtil.toEpoch(LocalDate.parse(date, formatter).atStartOfDay)
@@ -103,6 +105,6 @@ object YahooClient extends DataClient with Logging with PowerOperator {
   override def cancelLoadingTickData(reqLastN: Int, reqBidAskN: Int): Unit = ???
 
   def main(args: Array[String]): Unit = {
-
+    val ticker = args(0)
   }
 }

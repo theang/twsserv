@@ -1,7 +1,7 @@
 package serv1.db
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import serv1.model.job.{JobState, JobStatuses, TickLoadingJobState, TickerJobState}
+import serv1.model.job._
 import serv1.model.ticker.BarSizes.BarSize
 import serv1.model.ticker.{BarSizes, TickerError, TickerLoadType, TickerType}
 import serv1.util.LocalDateTimeUtil
@@ -112,11 +112,33 @@ trait DBJsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
     }
   }
 
+  implicit object EarningsLoadingJobStateFormat extends RootJsonFormat[EarningsLoadingJobState] {
+    override def write(obj: EarningsLoadingJobState): JsObject = JsObject(
+      "status" -> obj.status.toJson,
+      "from" -> obj.from.toJson,
+      "to" -> obj.to.toJson,
+      "current" -> obj.current.toJson
+    )
+
+    override def read(json: JsValue): EarningsLoadingJobState = {
+      List("status", "from", "to", "current")
+        .map(json.asJsObject.fields.get) match {
+        case Seq(status, from, to, current) =>
+          EarningsLoadingJobState(status.get.convertTo[JobStatuses.JobStatus],
+            from.get.convertTo[LocalDateTime],
+            to.get.convertTo[LocalDateTime],
+            current.get.convertTo[LocalDateTime]
+          )
+      }
+    }
+  }
+
   implicit object JobStateFormat extends RootJsonFormat[JobState] {
     override def write(obj: JobState): JsObject = {
       val (b: JobState, jsVal: JsValue) = obj match {
         case b: TickerJobState => (b, b.toJson)
         case b: TickLoadingJobState => (b, b.toJson)
+        case b: EarningsLoadingJobState => (b, b.toJson)
       }
       JsObject(
         "class" -> b.getClass.getSimpleName.toJson,
@@ -132,6 +154,8 @@ trait DBJsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
           dataJs.convertTo[TickerJobState]
         case "TickLoadingJobState" =>
           dataJs.convertTo[TickLoadingJobState]
+        case "EarningsLoadingJobState" =>
+          dataJs.convertTo[EarningsLoadingJobState]
       }
     }
   }

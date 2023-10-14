@@ -21,3 +21,8 @@ case class TickerJobState(status: JobStatus,
 case class TickLoadingJobState(status: JobStatus,
                                tickers: List[TickerLoadType],
                                errors: List[TickerError]) extends JobState
+
+case class EarningsLoadingJobState(status: JobStatus,
+                                   from: LocalDateTime,
+                                   to: LocalDateTime,
+                                   current: LocalDateTime) extends JobState
