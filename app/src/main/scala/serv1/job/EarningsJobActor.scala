@@ -1,8 +1,9 @@
 package serv1.job
 
 import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import serv1.client.NasdaqClient
+import serv1.client.exception.ClientException
 import serv1.db.repo.intf.JobRepoIntf
 import serv1.model.job.{EarningsLoadingJobState, JobStatuses}
 import slick.util.Logging
@@ -53,6 +54,10 @@ object EarningsJobActor extends Logging {
   }
 
   def apply(jobRepo: JobRepoIntf, jobService: EarningsJobService): Behavior[EarningsJobActorMessage] = {
+    Behaviors.supervise(setupActor(jobRepo, jobService)).onFailure[ClientException](SupervisorStrategy.restart)
+  }
+
+  def setupActor(jobRepo: JobRepoIntf, jobService: EarningsJobService): Behavior[EarningsJobActorMessage] = {
     Behaviors.withTimers { timers =>
       Behaviors.receiveMessage {
         case StartEarningsLoading(earningsJobId, replyTo) =>
@@ -83,7 +88,9 @@ object EarningsJobActor extends Logging {
                     jobService.loadEarningsForDay(earningsJobId, day)
                     jobService.updateEarningsJob(earningsJobId, day, state.to) match {
                       case Some(nextDay) => nextStep(timers, earningsJobId, nextDay)
-                      case None => logger.info(s"Job: $earningsJobId is finished")
+                      case None =>
+                        currentJobId = None
+                        logger.info(s"Job: $earningsJobId is finished")
                     }
                 }, () => {
                   logger.info(s"Cannot proceed for job: $earningsJobId")
