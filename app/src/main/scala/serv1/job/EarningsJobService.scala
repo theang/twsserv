@@ -17,7 +17,7 @@ object EarningsJobService {
 
 class EarningsJobService(client: DataClient, jobRepo: JobRepoIntf, eventRepo: EventRepoIntf) {
   def loadEarningsForDay(jobId: UUID, date: LocalDateTime): Unit = {
-    val earningDate = LocalDateTimeUtil.toEpoch(date)
+    val earningDate = LocalDateTimeUtil.toEpoch(date.toLocalDate.atStartOfDay())
     val earnings = client.getEarningsForDate(earningDate)
     eventRepo.insertEarningsEvents(earnings.map { earning => EarningsEventType(earning.symbol, earningDate, "", earning.forecast, earning.fiscalQuarterEnding, earning.eps, earning.epsForecast, earning.marketCap, earning.lastYearEps, earning.lastYearDate) })
   }

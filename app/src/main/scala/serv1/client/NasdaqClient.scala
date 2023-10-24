@@ -71,7 +71,11 @@ object NasdaqClient extends DataClient with Logging with PowerOperator with Nasd
   def parseEarningsData(stream: InputStream): Seq[Earnings] = {
     val parserInput = ParserInput(stream.readAllBytes())
     val parser = JsonParser(parserInput)
-    val earnings = parser.asJsObject.fields("data").asJsObject.fields("rows")
+    val data = parser.asJsObject.fields("data")
+    if (data == JsNull) {
+      return Seq.empty
+    }
+    val earnings = data.asJsObject.fields("rows")
     earnings match {
       case JsArray(v) => v.map(_.convertTo[Earnings])
       case _ => Seq.empty
