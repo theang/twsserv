@@ -1,9 +1,8 @@
 package serv1.job
 
 import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import akka.actor.typed.{ActorRef, Behavior, PreRestart, SupervisorStrategy}
 import serv1.client.NasdaqClient
-import serv1.client.exception.ClientException
 import serv1.db.repo.intf.JobRepoIntf
 import serv1.model.job.{EarningsLoadingJobState, JobStatuses}
 import slick.util.Logging
@@ -54,12 +53,12 @@ object EarningsJobActor extends Logging {
   }
 
   def apply(jobRepo: JobRepoIntf, jobService: EarningsJobService): Behavior[EarningsJobActorMessage] = {
-    Behaviors.supervise(setupActor(jobRepo, jobService)).onFailure[ClientException](SupervisorStrategy.restart)
+    Behaviors.supervise(setupActor(jobRepo, jobService)).onFailure[RuntimeException](SupervisorStrategy.restart)
   }
 
   def setupActor(jobRepo: JobRepoIntf, jobService: EarningsJobService): Behavior[EarningsJobActorMessage] = {
     Behaviors.withTimers { timers =>
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessage[EarningsJobActorMessage] {
         case StartEarningsLoading(earningsJobId, replyTo) =>
           if (currentJobId.isEmpty) {
             withJobState(jobRepo, earningsJobId, { state =>
@@ -101,6 +100,12 @@ object EarningsJobActor extends Logging {
             case None =>
               logger.info(s"Cannot proceed for job: $earningsJobId because there is no current job")
           }
+          Behaviors.same
+      }.receiveSignal {
+        case (_, PreRestart) =>
+          currentJobId = None
+          Behaviors.same
+        case _ =>
           Behaviors.same
       }
     }
