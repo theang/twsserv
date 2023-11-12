@@ -1,5 +1,6 @@
 package serv1.db.schema
 
+import serv1.db.types.HistoricalDataType.HistoricalDataType
 import serv1.model.ticker.TickerLoadType
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Tag
@@ -34,8 +35,10 @@ class TickerDataTableGen(tt: TickerLoadType) {
 
     def volume = column[Double]("VOL")
 
-    def * = (id, time, open, high, low, close, volume) <> ((TickerData.apply _).tupled, TickerData.unapply)
+    def historicalDataType = column[HistoricalDataType]("TYP")
 
-    def timeIndex = index(s"IND_TIME_$tableName", time, unique = true)
+    def * = (id, time, open, high, low, close, volume, historicalDataType) <> ((TickerData.apply _).tupled, TickerData.unapply)
+
+    def typTimeIndex = index(s"IND_TYP_TIME_$tableName", (historicalDataType, time), unique = true)
   }
 }
