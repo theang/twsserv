@@ -2,11 +2,12 @@ package serv1.client
 
 import com.ib.client._
 import com.typesafe.config.Config
-import serv1.client.converters.{BarSizeConverter, ContractConverter}
+import serv1.client.converters.{BarSizeConverter, ContractConverter, HistoricalDataTypeConverter}
 import serv1.client.model.TickerTickLastExchange
 import serv1.client.operations.{ClientOperationCallbacks, ClientOperationHandlers}
 import serv1.config.ServConfig
 import serv1.db.schema.{TickerTickBidAsk, TickerTickLast}
+import serv1.db.types.HistoricalDataType.HistoricalDataType
 import serv1.model.ticker.TickerType
 import serv1.time.HighResTime
 import serv1.util.{LocalDateTimeUtil, PowerOperator}
@@ -195,7 +196,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
   val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HH:mm:ss")
 
 
-  def loadHistoricalData(from: Long, to: Long, tickerType: TickerType, barSize: Int,
+  def loadHistoricalData(from: Long, to: Long, tickerType: TickerType, barSize: Int, historicalDataType: HistoricalDataType,
                          cont: ClientOperationCallbacks.HistoricalDataOperationCallback,
                          error: ClientOperationHandlers.ErrorHandler): Unit = {
     checkConnected()
@@ -213,8 +214,8 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
     val barSizeStr = BarSizeConverter.getBarSize(barSize)
     val dateFormat = BarSizeConverter.getDateFormat(barSize)
     logger.warn(s"historicalData request: $reqN: $contract, $queryTime, $duration, $barSizeStr")
-    ClientOperationHandlers.addHistoricalDataHandler(reqN, 10 ** tickerType.prec, dateFormat, cont, error)
-    client.reqHistoricalData(reqN, contract, queryTime, duration, barSizeStr, "TRADES", 1, dateFormat, false, null)
+    ClientOperationHandlers.addHistoricalDataHandler(reqN, historicalDataType, dateFormat, cont, error)
+    client.reqHistoricalData(reqN, contract, queryTime, duration, barSizeStr, HistoricalDataTypeConverter.getHistoricalDataType(historicalDataType), 1, dateFormat, false, null)
   }
 
   def startLoadingTickData(tickerType: TickerType,

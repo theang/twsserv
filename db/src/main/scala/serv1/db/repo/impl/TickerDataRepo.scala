@@ -59,12 +59,12 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging with BaseRepo {
     createTableIfNotExists(ticker)
 
     val tickerDataTable = new TickerDataTableGen(ticker)
-    val tableQueryRead = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.time inSet data.map(_.timestamp)).map(_.time)
+    val tableQueryRead = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.historicalDataType === ticker.historicalDataType && (td.time inSet data.map(_.timestamp))).map(_.time)
     val timesAlreadyInTable: Set[Long] = Await.result(DB.db.run(tableQueryRead.result), timeout).toSet
     val tableQuery = TickerDataTable.getQuery(ticker)
     val listToInsert = data.filter { hd =>
       !timesAlreadyInTable.contains(hd.timestamp)
-    }.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol) })
+    }.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol, hd.historicalDataType) })
     val action = tableQuery ++= listToInsert
     writeWithCheck(listToInsert.size, action, timeout)
   }
@@ -76,7 +76,7 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging with BaseRepo {
     createTableIfNotExists(ticker)
 
     val tickerDataTable = new TickerDataTableGen(ticker)
-    val tableQueryDelete = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.time inSet data.map(_.timestamp))
+    val tableQueryDelete = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.historicalDataType === ticker.historicalDataType && (td.time inSet data.map(_.timestamp)))
     Await.result(DB.db.run(tableQueryDelete.delete.asTry), timeout) match {
       case Success(res) =>
         logger.debug(s"Delete result: $res")
@@ -86,7 +86,7 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging with BaseRepo {
     }
 
     val tableQuery = TickerDataTable.getQuery(ticker)
-    val listToInsert = data.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol) })
+    val listToInsert = data.map({ hd => TickerData(0, hd.timestamp, hd.open, hd.high, hd.low, hd.close, hd.vol, hd.historicalDataType) })
     val action = tableQuery ++= listToInsert
     writeWithCheck(listToInsert.size, action, timeout)
   }
@@ -110,7 +110,7 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging with BaseRepo {
     }
     createTableIfNotExists(ticker)
     val tickerDataTable = new TickerDataTableGen(ticker)
-    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.time >= from && td.time <= to).sortBy(_.time)
+    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.historicalDataType === ticker.historicalDataType && td.time >= from && td.time <= to).sortBy(_.time)
     val tickerData = Await.result(DB.db.run(tableQuery.result), Duration.Inf)
     val tickerDataHD: Seq[HistoricalData] = tickerData.map(
       TickerData.tickerDataToHistoricalData
@@ -121,7 +121,7 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging with BaseRepo {
   def latestDate(ticker: TickerLoadType): Option[Long] = {
     createTableIfNotExists(ticker)
     val tickerDataTable = new TickerDataTableGen(ticker)
-    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].map(_.time).max
+    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.historicalDataType === ticker.historicalDataType).map(_.time).max
     Await.result(DB.db.run(tableQuery.result), Duration.Inf)
   }
 
@@ -131,7 +131,7 @@ object TickerDataRepo extends TickerDataRepoIntf with Logging with BaseRepo {
     }
     createTableIfNotExists(ticker)
     val tickerDataTable = new TickerDataTableGen(ticker)
-    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].map(_.time).min
+    val tableQuery = TableQuery[tickerDataTable.TickerDataTable].filter(td => td.historicalDataType === ticker.historicalDataType).map(_.time).min
     Await.result(DB.db.run(tableQuery.result), Duration.Inf)
   }
 

@@ -5,6 +5,8 @@ import serv1.client.converters.BarSizeConverter
 import serv1.client.operations.ClientOperationCallbacks
 import serv1.client.operations.ClientOperationHandlers.ErrorHandler
 import serv1.config.ServConfig
+import serv1.db.types.HistoricalDataType
+import serv1.db.types.HistoricalDataType.HistoricalDataType
 import serv1.model.HistoricalData
 import serv1.model.ticker.TickerType
 import serv1.util.{LocalDateTimeUtil, PowerOperator}
@@ -50,11 +52,12 @@ object YahooClient extends DataClient with Logging with PowerOperator {
       case Vector(date, open, high, low, close, adjClose, vol) =>
         try {
           HistoricalData(formatDate(date),
-            (high.toFloat * (10 ** prec)).toLong,
-            (low.toFloat * (10 ** prec)).toLong,
-            (open.toFloat * (10 ** prec)).toLong,
-            (close.toFloat * (10 ** prec)).toLong,
-            vol.toDouble)
+            high.toDouble,
+            low.toDouble,
+            open.toDouble,
+            close.toDouble,
+            vol.toDouble,
+            HistoricalDataType.TRADES)
         } catch {
           case exc: DateTimeParseException =>
             logger.warn(s"Could not parse date: $date")
@@ -75,7 +78,7 @@ object YahooClient extends DataClient with Logging with PowerOperator {
     }
   }
 
-  override def loadHistoricalData(from: Long, to: Long, tickerType: TickerType, barSize: Int,
+  override def loadHistoricalData(from: Long, to: Long, tickerType: TickerType, barSize: Int, historicalDataType: HistoricalDataType,
                                   cont: ClientOperationCallbacks.HistoricalDataOperationCallback, error: ErrorHandler): Unit = {
     val urlStr: String = baseUrl.format(tickerType.name,
       from.toString,

@@ -1,6 +1,8 @@
 package serv1.db
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import serv1.db.types.HistoricalDataType
+import serv1.db.types.HistoricalDataType.HistoricalDataType
 import serv1.model.job._
 import serv1.model.ticker.BarSizes.BarSize
 import serv1.model.ticker.{BarSizes, TickerError, TickerLoadType, TickerType}
@@ -45,8 +47,40 @@ trait DBJsonFormats extends SprayJsonSupport with DefaultJsonProtocol {
     }
   }
 
+  implicit object HistoricalDataTypeFormat extends RootJsonFormat[HistoricalDataType] {
+    override def write(obj: HistoricalDataType): JsString = JsString(obj.toString)
 
-  implicit val tickerLoadTypeFormat: RootJsonFormat[TickerLoadType] = jsonFormat2(TickerLoadType)
+    override def read(json: JsValue): HistoricalDataType = json match {
+      case JsString(s) =>
+        try {
+          HistoricalDataType.withName(s)
+        } catch {
+          case exc: NoSuchElementException => throw DeserializationException("Need HistoricalDataType", exc)
+        }
+      case _ => throw DeserializationException("Need HistoricalDataType")
+    }
+  }
+
+  implicit object TickerLoadTypeFormat extends RootJsonFormat[TickerLoadType] {
+    override def write(obj: TickerLoadType): JsObject = JsObject(
+      "tickerType" -> obj.tickerType.toJson,
+      "barSize" -> obj.barSize.toJson,
+      "historicalDataType" -> obj.historicalDataType.toJson
+    )
+
+    override def read(json: JsValue): TickerLoadType = {
+      List("tickerType", "barSize", "historicalDataType")
+        .map(json.asJsObject.fields.get) match {
+        case Seq(tickerType, barSize, historicalDataType) =>
+          TickerLoadType(tickerType.get.convertTo[TickerType],
+            barSize.get.convertTo[BarSizes.BarSize],
+            historicalDataType.map(_.convertTo[HistoricalDataType]).getOrElse(HistoricalDataType.TRADES)
+          )
+      }
+    }
+  }
+
+
   implicit val tickerErrorFormat: RootJsonFormat[TickerError] = jsonFormat2(TickerError)
 
   implicit object JobStatusJsonFormat extends RootJsonFormat[JobStatuses.JobStatus] {

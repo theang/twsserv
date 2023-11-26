@@ -29,7 +29,7 @@ trait JsonFormats extends SprayJsonSupport with DefaultJsonProtocol with DBJsonF
   implicit val loadDataRequestFormat: RootJsonFormat[LoadDataRequest] = jsonFormat2(LoadDataRequest)
   implicit val reloadDataRequestFormat: RootJsonFormat[ReloadDataRequest] = jsonFormat1(ReloadDataRequest)
 
-  implicit val historicalDataFormat: RootJsonFormat[HistoricalData] = jsonFormat6(HistoricalData)
+  implicit val historicalDataFormat: RootJsonFormat[HistoricalData] = jsonFormat7(HistoricalData)
 
   implicit object UUIDJsonFormat extends RootJsonFormat[UUID] {
     override def write(obj: UUID): JsString = JsString(obj.toString)

@@ -4,12 +4,13 @@ import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
 import serv1.db.schema.TickerDataTableNameUtil
+import serv1.db.types.HistoricalDataType
 import serv1.model.ticker.{BarSizes, TickerLoadType, TickerType}
 
 @RunWith(classOf[JUnitRunner])
 class DBUtilSuite extends AnyFunSuite {
   val tickerLoadType: TickerLoadType = TickerLoadType(TickerType("TEST", "EXC", "STK", 2, Option.empty, Option.empty, Option.empty,
-    Option.empty, Option.empty, Option.empty, Option.empty), BarSizes.MIN15)
+    Option.empty, Option.empty, Option.empty, Option.empty), BarSizes.MIN15, HistoricalDataType.TRADES)
   test("test ticket data table name parsing format") {
     val tableName = TickerDataTableNameUtil.formatTableName(tickerLoadType)
     val testTickerLoadType = TickerDataTableNameUtil.parseTableName(tableName).get

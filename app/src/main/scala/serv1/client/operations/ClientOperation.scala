@@ -4,6 +4,7 @@ import com.ib.client.Bar
 import serv1.client.converters.HistoricalDataConverter
 import serv1.client.model.TickerTickLastExchange
 import serv1.db.schema.TickerTickBidAsk
+import serv1.db.types.HistoricalDataType.HistoricalDataType
 import serv1.model.HistoricalData
 import slick.util.Logging
 
@@ -38,11 +39,11 @@ object ClientOperationCallbacks {
 trait DataOperation
 
 class HistoricalDataClientOperation(contP: ClientOperationCallbacks.HistoricalDataOperationCallback,
-                                    dataP: ArrayBuffer[HistoricalData], precMultiplier: Int,
+                                    dataP: ArrayBuffer[HistoricalData], historicalDataType: HistoricalDataType,
                                     dateFormat: Int, pChunkSize: Int, isPurgeable: Boolean)(implicit executionContext: ExecutionContext)
   extends ClientOperation[Bar, ArrayBuffer[HistoricalData], ClientOperationCallbacks.HistoricalDataOperationCallback](contP, dataP) with DataOperation {
 
-  private val converter = HistoricalDataConverter.fromPrecAndDateFormat(precMultiplier, dateFormat)
+  private val converter = HistoricalDataConverter.fromPrecAndDateFormat(historicalDataType, dateFormat)
 
   override def addOne(datum: Bar): Unit = {
     data.addOne(converter(datum))

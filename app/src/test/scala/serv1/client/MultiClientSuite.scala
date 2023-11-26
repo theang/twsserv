@@ -5,6 +5,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
 import serv1.client.converters.BarSizeConverter
 import serv1.db.TestData
+import serv1.db.types.HistoricalDataType
 import serv1.model.HistoricalData
 import serv1.model.ticker.{BarSizes, TickerType}
 import serv1.util.LocalDateTimeUtil
@@ -19,6 +20,7 @@ class MultiClientSuite extends AnyFunSuite {
 
     YahooClient.loadHistoricalData(LocalDateTimeUtil.toEpoch(TestData.from), LocalDateTimeUtil.toEpoch(TestData.to),
       TickerType(TestData.xomTicker, TestData.xomTickerExch, TestData.xomTickerType, 2, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty, Option.empty), BarSizeConverter.getBarSizeSeconds(BarSizes.DAY),
+      HistoricalDataType.TRADES,
       (data: Seq[HistoricalData], last: Boolean) => {
         monitor.synchronized {
           if (last) {
