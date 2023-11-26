@@ -1,5 +1,6 @@
 package serv1.db.schema
 
+import serv1.db.types.HistoricalDataType
 import serv1.model.ticker.BarSizes.BarSize
 import serv1.model.ticker.{TickerLoadType, TickerType}
 
@@ -18,6 +19,6 @@ object TickerTypeDB {
 
   implicit def tickerTypeDBToTickerLoadType(tickerTypeDB: TickerTypeDB): TickerLoadType = {
     TickerLoadType(TickerType(tickerTypeDB.name, tickerTypeDB.exchange, tickerTypeDB.typ, tickerTypeDB.prec, tickerTypeDB.localSymbol,
-      tickerTypeDB.strike, tickerTypeDB.right, tickerTypeDB.multiplier, tickerTypeDB.lastTradeDateOrContractMonth, tickerTypeDB.currency, tickerTypeDB.primaryExchange), tickerTypeDB.barSize)
+      tickerTypeDB.strike, tickerTypeDB.right, tickerTypeDB.multiplier, tickerTypeDB.lastTradeDateOrContractMonth, tickerTypeDB.currency, tickerTypeDB.primaryExchange), tickerTypeDB.barSize, HistoricalDataType.TRADES)
   }
 }

@@ -1,3 +1,5 @@
 package serv1.model.ticker
 
-case class TickerLoadType(tickerType: TickerType, barSize: BarSizes.BarSize)
+import serv1.db.types.HistoricalDataType.HistoricalDataType
+
+case class TickerLoadType(tickerType: TickerType, barSize: BarSizes.BarSize, historicalDataType: HistoricalDataType)

@@ -4,6 +4,7 @@ import com.ib.client.Bar
 import serv1.client.TWSClient.config
 import serv1.client.model.TickerTickLastExchange
 import serv1.db.schema.TickerTickBidAsk
+import serv1.db.types.HistoricalDataType.HistoricalDataType
 import serv1.model.HistoricalData
 import slick.util.Logging
 
@@ -35,12 +36,12 @@ object ClientOperationHandlers extends Logging {
   }
 
   def addHistoricalDataHandler(reqN: Int,
-                               precMultiplier: Int,
+                               historicalDataType: HistoricalDataType,
                                dateFormat: Int,
                                cont: ClientOperationCallbacks.HistoricalDataOperationCallback,
                                error: ErrorHandler): Unit = {
     historicalData.addOne((reqN,
-      new HistoricalDataClientOperation(cont, new ArrayBuffer[HistoricalData](), precMultiplier, dateFormat, LOAD_CHUNK_SIZE, false)))
+      new HistoricalDataClientOperation(cont, new ArrayBuffer[HistoricalData](), historicalDataType, dateFormat, LOAD_CHUNK_SIZE, false)))
     errorHandlers.addOne((reqN, error))
   }
 

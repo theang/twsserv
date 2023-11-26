@@ -1,5 +1,6 @@
 package serv1.db.schema
 
+import serv1.db.types.HistoricalDataType
 import serv1.db.types.HistoricalDataType.HistoricalDataType
 import serv1.model.ticker.TickerLoadType
 import slick.jdbc.PostgresProfile.api._
@@ -25,17 +26,17 @@ class TickerDataTableGen(tt: TickerLoadType) {
 
     def time = column[Long]("TIME")
 
-    def open = column[Long]("OPEN")
+    def open = column[Double]("OPEN")
 
-    def high = column[Long]("HIGH")
+    def high = column[Double]("HIGH")
 
-    def low = column[Long]("LOW")
+    def low = column[Double]("LOW")
 
-    def close = column[Long]("CLOSE")
+    def close = column[Double]("CLOSE")
 
     def volume = column[Double]("VOL")
 
-    def historicalDataType = column[HistoricalDataType]("TYP")
+    def historicalDataType = column[HistoricalDataType]("TYP", O.Default(HistoricalDataType.TRADES))
 
     def * = (id, time, open, high, low, close, volume, historicalDataType) <> ((TickerData.apply _).tupled, TickerData.unapply)
 

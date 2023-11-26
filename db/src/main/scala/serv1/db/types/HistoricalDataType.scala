@@ -16,5 +16,5 @@ object HistoricalDataType extends Enumeration {
     v => (v.asInstanceOf[HistoricalDataTypeVal].intVal, v)
   }.toMap
 
-  implicit val historicalDataTypeValMapper: JdbcType[Value] with BaseTypedType[Value] = MappedColumnType.base[Value, Int](_.asInstanceOf[HistoricalDataTypeVal].intVal, intToHistoricalDataTypeMap[_])
+  implicit val historicalDataTypeValMapper: JdbcType[Value] with BaseTypedType[Value] = MappedColumnType.base[Value, Int](_.asInstanceOf[HistoricalDataTypeVal].intVal, intToHistoricalDataTypeMap(_))
 }

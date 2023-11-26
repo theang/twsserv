@@ -63,6 +63,7 @@ class TickerJobService(client: DataClient,
       LocalDateTimeUtil.toEpoch(to),
       ticker.tickerType,
       BarSizeConverter.getBarSizeSeconds(ticker.barSize),
+      ticker.historicalDataType,
       (data: Seq[HistoricalData], last: Boolean) => saveHistoricalData(jobId, ticker, data, overwrite, last),
       (code: Int, msg: String, advancedOrderRejectJson: String) => errorCallback(jobId, ticker, code, msg, advancedOrderRejectJson))
   }

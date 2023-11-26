@@ -43,3 +43,26 @@ upgrade_2_to_3: |+
                                    "CURRENCY", "PRIMARY_EXCHANGE"); 
   END $$ LANGUAGE 'plpgsql';
   COMMIT;
+upgrade_3_to_4: |+
+  DO $$
+  DECLARE
+   sch text := 'public';
+   tbl text;
+  BEGIN
+  FOR tbl IN
+    SELECT table_name FROM information_schema.tables
+    WHERE  table_schema in (sch)
+      AND  table_name  like 'TD_%'
+      AND NOT (table_name  like 'TD_%_BIDASK')
+      AND NOT (table_name  like 'TD_%_LAST')
+  LOOP 
+  EXECUTE format('DROP INDEX IF EXISTS %I.%I', sch, 'IND_TIME_' || tbl);
+  EXECUTE format('ALTER TABLE %I.%I ADD COLUMN IF NOT EXISTS "TYP" bigint DEFAULT 0', sch, tbl); 
+  EXECUTE format('ALTER TABLE %I.%I ALTER COLUMN "OPEN" TYPE double precision USING ("OPEN"::double precision / 100)', sch, tbl);
+  EXECUTE format('ALTER TABLE %I.%I ALTER COLUMN "HIGH" TYPE double precision USING ("HIGH"::double precision / 100)', sch, tbl);
+  EXECUTE format('ALTER TABLE %I.%I ALTER COLUMN "LOW" TYPE double precision USING ("LOW"::double precision / 100)', sch, tbl);
+  EXECUTE format('ALTER TABLE %I.%I ALTER COLUMN "CLOSE" TYPE double precision USING ("CLOSE"::double precision / 100)', sch, tbl);
+  EXECUTE format('CREATE UNIQUE INDEX %I ON %I.%I("TYP", "TIME")', 'IND_TYP_TIME_' || tbl, sch, tbl);
+  COMMIT;
+  END LOOP;
+  END $$ LANGUAGE 'plpgsql';

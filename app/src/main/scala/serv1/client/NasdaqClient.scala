@@ -6,6 +6,7 @@ import serv1.client.model.{Earnings, NasdaqJsonFormats}
 import serv1.client.operations.ClientOperationCallbacks
 import serv1.client.operations.ClientOperationHandlers.ErrorHandler
 import serv1.config.ServConfig
+import serv1.db.types.HistoricalDataType.HistoricalDataType
 import serv1.model.ticker.TickerType
 import serv1.time.HighResTime
 import serv1.util.{LocalDateTimeUtil, PowerOperator}
@@ -53,7 +54,7 @@ object NasdaqClient extends DataClient with Logging with PowerOperator with Nasd
     LocalDateTimeUtil.fromEpoch(ts)
   }
 
-  override def loadHistoricalData(from: Long, to: Long, tickerType: TickerType, barSize: Int,
+  override def loadHistoricalData(from: Long, to: Long, tickerType: TickerType, barSize: Int, historicalDataType: HistoricalDataType,
                                   cont: ClientOperationCallbacks.HistoricalDataOperationCallback, error: ErrorHandler): Unit = ???
 
   override def startLoadingTickData(tickerType: TickerType,
