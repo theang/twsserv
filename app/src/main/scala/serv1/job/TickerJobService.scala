@@ -4,10 +4,10 @@ import akka.actor.typed.ActorRef
 import serv1.client.converters.BarSizeConverter
 import serv1.client.model.TickerTickLastExchange
 import serv1.client.{DataClient, TWSClientErrors}
-import serv1.db.TickerDataActor
 import serv1.db.TickerDataActor.{Retry, Write, WriteTickBidAsk, WriteTickLast}
 import serv1.db.repo.intf.{ExchangeRepoIntf, JobRepoIntf}
 import serv1.db.schema.TickerTickBidAsk
+import serv1.db.{JobUpdateActor, TickerDataActor}
 import serv1.model.HistoricalData
 import serv1.model.ticker.TickerLoadType
 import serv1.util.LocalDateTimeUtil
@@ -20,6 +20,7 @@ import java.util.UUID
 class TickerJobService(client: DataClient,
                        jobRepo: JobRepoIntf,
                        tickerDataActor: ActorRef[TickerDataActor.Message],
+                       jobUpdateActor: ActorRef[JobUpdateActor.Message],
                        exchangeRepo: ExchangeRepoIntf) extends Logging {
 
   var ERROR_CODES_TO_EXCLUDE_TICKERS_FROM_FURTHER_PROCESSING: Set[Int] = Set(TWSClientErrors.CONTRACT_DESCRIPTION_IS_AMBIGUOUS,
@@ -29,14 +30,13 @@ class TickerJobService(client: DataClient,
 
   val DEFAULT_EXCHANGE: String = "DEFAULT"
 
-  def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ignore: Boolean): Boolean = {
-    val updateResult = jobRepo.updateJob(jobId, ticker, error, ignore)
-    if (updateResult && (ignore || error.isEmpty)) {
+  def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ignore: Boolean): Unit = {
+    jobUpdateActor ! JobUpdateActor.JobUpdateMessage(jobId, List(JobRepoIntf.UpdateTickerJob(ticker, error, ignore)))
+    if (ignore || error.isEmpty) {
       tickerJobActor.foreach { tickerJobActorRef =>
         tickerJobActorRef ! TickerJobActor.Finished(jobId)
       }
     }
-    updateResult
   }
 
   def updateJobWithRetry(jobId: UUID, ticker: TickerLoadType, error: Option[String], ignore: Boolean): Unit = {

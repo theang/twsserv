@@ -55,6 +55,7 @@ object BarSizeConverter {
 
   def getBarSizeSeconds(barSize: BarSizes.BarSize): Int = {
     barSize match {
+      case BarSizes.MIN1 => min
       case BarSizes.MIN5 => 5 * min
       case BarSizes.HOUR => hr
       case BarSizes.MIN15 => 15 * min

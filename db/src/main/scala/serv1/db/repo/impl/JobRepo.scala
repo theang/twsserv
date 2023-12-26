@@ -2,6 +2,7 @@ package serv1.db.repo.impl
 
 import serv1.db.DBSelectRawForUpdate.{AlreadyLocked, NothingToLock, Success}
 import serv1.db.repo.intf.JobRepoIntf
+import serv1.db.repo.intf.JobRepoIntf.UpdateTickerJob
 import serv1.db.schema.{Job, JobTable}
 import serv1.db.{Configuration, DB, DBJsonFormats, DBSelectRawForUpdate}
 import serv1.model.job._
@@ -189,22 +190,31 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
       from = t.from, to = t.to)
   }
 
+  def updateTickerJobState(t: TickerJobState, updates: Seq[UpdateTickerJob]): TickerJobState = {
+    updates.foldLeft(t)((st, upd) => {
+      updateTickerJobState(st, upd.ticker, upd.error, upd.ignore)
+    })
+  }
+
   def updateJob(jobId: UUID, ticker: TickerLoadType): Boolean =
     updateJob(jobId, ticker, Option.empty, ignore = false)
 
 
   def updateJob(jobId: UUID, ticker: TickerLoadType, error: Option[String], ignore: Boolean): Boolean = {
+    updateJob(jobId, List(UpdateTickerJob(ticker, error, ignore)))
+  }
+
+  def updateJob(jobId: UUID, tickerUpdate: Seq[UpdateTickerJob]): Boolean = {
     getJobStates(jobId) match {
       case Seq((_, _: TickerJobState)) =>
         updateJob[TickerJobState](jobId, { t: TickerJobState =>
-          updateTickerJobState(t, ticker, error, ignore).asInstanceOf[JobState].toJson.prettyPrint
-        }, "$ticker error = $error, ignore = $ignore", "Can update only Ticker Job")
+          updateTickerJobState(t, tickerUpdate).asInstanceOf[JobState].toJson.prettyPrint
+        }, s"$tickerUpdate", "Can update only Ticker Job")
       case Seq((_, _: TickLoadingJobState)) =>
         updateJob[TickLoadingJobState](jobId, { t: TickLoadingJobState =>
           t.copy(status = JobStatuses.FINISHED).asInstanceOf[JobState].toJson.prettyPrint
         }, "", "Can update only Tick Loading Job")
     }
-
   }
 
   def removeJob(jobId: UUID): Unit = {
