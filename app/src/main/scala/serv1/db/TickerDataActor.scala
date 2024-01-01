@@ -55,7 +55,7 @@ object TickerDataActor extends Logging {
 
   case class Retry(attempt: Int,
                    description: String,
-                   action: () => Boolean,
+                   action: () => Unit,
                    replyTo: ActorRef[ResultMessage]) extends Message
 
   def calculateRandomDelay(): FiniteDuration = {
@@ -152,12 +152,9 @@ object TickerDataActor extends Logging {
             }
           } else {
             logger.debug(s"Execute action $description")
-            if (action()) {
-              if (replyTo != null) {
-                replyTo ! WriteSuccessful
-              }
-            } else {
-              timers.startSingleTimer(timerKey.getAndIncrement(), Retry(attempt + 1, description, action, replyTo), calculateRandomDelay())
+            action()
+            if (replyTo != null) {
+              replyTo ! WriteSuccessful
             }
           }
           Behaviors.same

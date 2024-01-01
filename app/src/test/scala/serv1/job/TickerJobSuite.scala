@@ -6,8 +6,8 @@ import org.scalatestplus.junit.JUnitRunner
 import serv1.TestService
 import serv1.client.DataClient
 import serv1.db.TestData._
-import serv1.db.TickerDataActor
 import serv1.db.repo.intf.{ExchangeRepoIntf, JobRepoIntf, TickerDataRepoIntf, TickerTickRepoIntf}
+import serv1.db.{JobUpdateActor, TickerDataActor}
 import serv1.job.TickerJobActor.{CheckState, Finished, Run}
 
 @RunWith(classOf[JUnitRunner])
@@ -22,9 +22,10 @@ class TickerJobSuite extends TestService with MockFactory {
     (jobRepo.getTickerJobStates _).expects(TestID).returning(List(testTickerJobState)).repeat(2)
     val tickerDataRepo = mock[TickerDataRepoIntf]
     val tickerTickRepo = mock[TickerTickRepoIntf]
+    val jobUpdateActor = testKit.spawn(JobUpdateActor(jobRepo))
     val tickerDataActor = testKit.spawn(TickerDataActor(tickerDataRepo, tickerTickRepo))
     val exchangeRepo = mock[ExchangeRepoIntf]
-    val tickerJobService = new TickerJobService(clientMock, jobRepo, tickerDataActor, exchangeRepo)
+    val tickerJobService = new TickerJobService(clientMock, jobRepo, tickerDataActor, jobUpdateActor, exchangeRepo)
     val tickerJob = testKit.spawn(TickerJobActor(tickerJobService, jobRepo), "tickerJob")
     val probe = testKit.createTestProbe[TickerJobActor.JobActorResponse]()
 
@@ -53,9 +54,10 @@ class TickerJobSuite extends TestService with MockFactory {
     (jobRepo.getJobStates _).expects(TestID).returning(List((TestID, testTickerTickLoadingJobState)))
     val tickerDataRepo = mock[TickerDataRepoIntf]
     val tickerTickRepo = mock[TickerTickRepoIntf]
+    val jobUpdateActor = testKit.spawn(JobUpdateActor(jobRepo))
     val tickerDataActor = testKit.spawn(TickerDataActor(tickerDataRepo, tickerTickRepo))
     val exchangeRepo = mock[ExchangeRepoIntf]
-    val tickerJobService = new TickerJobService(clientMock, jobRepo, tickerDataActor, exchangeRepo)
+    val tickerJobService = new TickerJobService(clientMock, jobRepo, tickerDataActor, jobUpdateActor, exchangeRepo)
     val tickerJob = testKit.spawn(TickerJobActor(tickerJobService, jobRepo), "tickerJob")
     val probe = testKit.createTestProbe[TickerJobActor.JobActorResponse]()
     tickerJob ! Run(TestID, probe.ref)

@@ -215,7 +215,7 @@ object TWSClient extends DataClient with EWrapper with Logging with PowerOperato
     val dateFormat = BarSizeConverter.getDateFormat(barSize)
     logger.warn(s"historicalData request: $reqN: $contract, $queryTime, $duration, $barSizeStr")
     ClientOperationHandlers.addHistoricalDataHandler(reqN, historicalDataType, dateFormat, cont, error)
-    client.reqHistoricalData(reqN, contract, queryTime, duration, barSizeStr, HistoricalDataTypeConverter.getHistoricalDataType(historicalDataType), 1, dateFormat, false, null)
+    client.reqHistoricalData(reqN, contract, queryTime, duration, barSizeStr, HistoricalDataTypeConverter.getHistoricalDataType(historicalDataType), 0, dateFormat, false, null)
   }
 
   def startLoadingTickData(tickerType: TickerType,

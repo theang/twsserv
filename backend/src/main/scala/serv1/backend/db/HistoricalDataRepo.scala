@@ -3,6 +3,8 @@ package serv1.backend.db
 import io.getquill._
 import io.getquill.jdbczio.Quill
 import serv1.db.schema.{TickerData, TickerDataTableNameUtil}
+import serv1.db.types.HistoricalDataType
+import serv1.db.types.HistoricalDataType.HistoricalDataType
 import serv1.model.ticker.TickerLoadType
 import zio.ZIO
 
@@ -11,6 +13,9 @@ import java.sql.SQLException
 class HistoricalDataRepo(quill: Quill.Postgres[NamingStrategy]) {
 
   import quill._
+
+  private implicit val historicalDataTypeDecoder: MappedEncoding[Int, HistoricalDataType] = MappedEncoding[Int, HistoricalDataType](
+    HistoricalDataType.intToHistoricalDataTypeMap)
 
   private def historicalDataQuery(tickerLoadType: TickerLoadType): DynamicEntityQuery[TickerData] = {
     val tableName = TickerDataTableNameUtil.formatTableName(tickerLoadType)

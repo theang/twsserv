@@ -10,7 +10,7 @@ import serv1.client.MultiClient
 import serv1.rest.JsonFormats
 import spray.json.RootJsonFormat
 
-class ClientConfig extends Directives with JsonFormats {
+class ClientConfig(multiClient: MultiClient) extends Directives with JsonFormats {
   case class Client(clientName: String)
 
   implicit val clientFormat: RootJsonFormat[Client] = jsonFormat1(Client)
@@ -28,7 +28,7 @@ class ClientConfig extends Directives with JsonFormats {
     path("clientConfig") {
       get {
         complete {
-          Client(MultiClient.currentClient)
+          Client(multiClient.currentClient)
         }
       }
     }
