@@ -3,6 +3,7 @@ package serv1.backend
 import serv1.backend.app.HistoricalData
 import serv1.backend.serialize.SerializeTOHLCV
 import serv1.db.schema.TickerData
+import serv1.db.types.HistoricalDataType
 import zio.json._
 import zio.test._
 
@@ -18,12 +19,12 @@ object TickerDataSpec extends ZIOSpecDefault {
   def spec: Spec[Any, Nothing] = suite("TickerData serialization tests")(
     test("Test json serialization of TickerData") {
       implicit val jsonCodec: JsonCodec[TickerData] = HistoricalData.tickerDataJson
-      val ticker = Seq(TickerData(0, 10, 20, 30, 40, 50, 10.10))
+      val ticker = Seq(TickerData(0, 10, 20, 30, 40, 50, 10.10, HistoricalDataType.TRADES))
       val tickerJson = ticker.toJson
       assertTrue(TEST_JSON == tickerJson)
     }
     , test("Test binary serialization of TickerData") {
-      val ticker = Seq(TickerData(0, 10, 20, 30, 40, 50, 10.10))
+      val ticker = Seq(TickerData(0, 10, 20, 30, 40, 50, 10.10, HistoricalDataType.TRADES))
 
       //val stringBuilder: StringBuilder = new StringBuilder()
       def hex = { a: Integer =>

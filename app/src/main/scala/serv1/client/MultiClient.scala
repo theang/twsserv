@@ -11,9 +11,10 @@ import serv1.model.ticker.TickerType
 import slick.util.Logging
 
 import scala.jdk.CollectionConverters._
-object MultiClient extends DataClient {
+
+class MultiClient(twsThrottlingClient: TWSThrottlingClient) extends DataClient {
   val clients: Map[String, DataClient with Logging] = Map("TWSClient" -> TWSClient,
-    "YahooClient" -> YahooClient, "NasdaqClient" -> NasdaqClient)
+    "YahooClient" -> YahooClient, "NasdaqClient" -> NasdaqClient, "TWSThrottlingClient" -> twsThrottlingClient.asInstanceOf[DataClient with Logging])
   var config: Config = ServConfig.config.getConfig("multiClient")
   var currentClient: String = config.getString("defaultClient")
   var clientsMap: Map[String, String] = config.getConfigList("clientsMap").asScala.map {

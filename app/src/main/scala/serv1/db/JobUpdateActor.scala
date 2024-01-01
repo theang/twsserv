@@ -33,7 +33,7 @@ object JobUpdateActor extends Logging {
 
   case object Purge extends Message
 
-  var queued: mutable.Map[UUID, ArrayBuffer[JobRepoIntf.UpdateTickerJob]] = mutable.HashMap().withDefault(_ => ArrayBuffer())
+  var queued: mutable.Map[UUID, ArrayBuffer[JobRepoIntf.UpdateTickerJob]] = mutable.HashMap.empty
 
   case object TimerKey
 
@@ -44,27 +44,36 @@ object JobUpdateActor extends Logging {
         context =>
           Behaviors.receiveMessage {
             case JobUpdateMessage(jobId, tickerUpdate) =>
-              queued(jobId).addAll(tickerUpdate)
-              if (queued(jobId).length >= jobUpdateBundleSize) {
+              logger.debug(s"Queueing updates: $jobId $tickerUpdate")
+              val updates = queued.getOrElseUpdate(jobId, mutable.ArrayBuffer.empty)
+              updates.addAll(tickerUpdate)
+              logger.debug(s"Debug JobUpdateMessage: $queued")
+              if (updates.length >= jobUpdateBundleSize) {
                 context.self ! Write(Seq(jobId))
               }
               Behaviors.same
             case Write(jobIds) =>
+              logger.debug(s"Writing ids: $jobIds")
               jobIds.foreach {
                 jobId =>
-                  val updates = queued(jobId)
+                  val updates = queued.getOrElseUpdate(jobId, mutable.ArrayBuffer.empty)
                   if (updates.nonEmpty) {
                     try {
+                      logger.info(s"Writing updates: $jobId $updates")
                       jobRepoIntf.updateJob(jobId, updates.toSeq)
-                      queued(jobId).clear()
+                      updates.clear()
+                      queued.remove(jobId)
                     } catch {
                       case exc: DatabaseException =>
                         logger.warn(s"Blocking write unsuccessful id=$jobId updates=$updates exc=$exc")
                     }
+                  } else {
+                    queued.remove(jobId)
                   }
               }
               Behaviors.same
             case Purge =>
+              logger.debug(s"Purge: $queued")
               val jobIds = queued.toSeq.filter(_._2.nonEmpty).map(_._1)
               context.self ! Write(jobIds)
               Behaviors.same

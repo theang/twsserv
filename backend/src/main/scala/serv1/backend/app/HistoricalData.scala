@@ -2,6 +2,7 @@ package serv1.backend.app
 
 import serv1.backend.db.HistoricalDataRepo
 import serv1.backend.dto.{HistoricalDataRequest, HistoricalDataRequestDT}
+import serv1.backend.json.JsonCommon
 import serv1.backend.serialize.SerializeTOHLCV
 import serv1.db.schema.TickerData
 import serv1.util.LocalDateTimeUtil
@@ -11,7 +12,7 @@ import zio.json._
 import zio.stream.ZStream
 
 
-object HistoricalData extends ErrorHandler {
+object HistoricalData extends ErrorHandler with JsonCommon {
 
   implicit val tickerDataJson: JsonCodec[TickerData] = DeriveJsonCodec.gen
 
