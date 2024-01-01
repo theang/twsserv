@@ -19,10 +19,10 @@ import scala.jdk.CollectionConverters._
 
 object DataClientThrottlingActor extends Logging {
   var config: Config = ServConfig.config.getConfig("throttlingActor")
-  var identicalHistoricalRequestsCoolDownSeconds = config.getInt("identicalHistoricalRequestsCoolDownSeconds")
-  var simultaneousHistoricalRequests = config.getInt("simultaneousHistoricalRequests")
-  var sizeLimit = config.getInt("sizeLimit")
-  var runRequestsFromQueueInterval = config.getInt("runRequestsFromQueueInterval")
+  var identicalHistoricalRequestsCoolDownSeconds: Int = config.getInt("identicalHistoricalRequestsCoolDownSeconds")
+  var simultaneousHistoricalRequests: Int = config.getInt("simultaneousHistoricalRequests")
+  var sizeLimit: Int = config.getInt("sizeLimit")
+  var runRequestsFromQueueInterval: Int = config.getInt("runRequestsFromQueueInterval")
 
   sealed trait Message
 
@@ -92,7 +92,7 @@ object DataClientThrottlingActor extends Logging {
     (0 until totalIntervals.toInt).map { chunk =>
       val lastEpoch = loadHistoricalData.from + (chunk + 1) * chunkSize
       LoadHistoricalData(loadHistoricalData.from + chunk * chunkSize,
-        (if (lastEpoch > loadHistoricalData.to) loadHistoricalData.to else lastEpoch),
+        if (lastEpoch > loadHistoricalData.to) loadHistoricalData.to else lastEpoch,
         loadHistoricalData.tickerType, loadHistoricalData.barSize, loadHistoricalData.historicalDataType,
         loadHistoricalData.cont, loadHistoricalData.error)
     }
