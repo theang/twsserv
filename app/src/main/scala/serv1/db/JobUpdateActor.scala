@@ -1,7 +1,7 @@
 package serv1.db
 
-import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{Behavior, SupervisorStrategy}
 import com.typesafe.config.Config
 import serv1.config.ServConfig
 import serv1.db.exception.DatabaseException
@@ -38,6 +38,10 @@ object JobUpdateActor extends Logging {
   case object TimerKey
 
   def apply(jobRepoIntf: JobRepoIntf): Behavior[Message] = {
+    Behaviors.supervise(setupActor(jobRepoIntf)).onFailure[RuntimeException](SupervisorStrategy.restart)
+  }
+
+  def setupActor(jobRepoIntf: JobRepoIntf): Behavior[Message] = {
     Behaviors.withTimers { timers =>
       timers.startTimerWithFixedDelay(TimerKey, Purge, FiniteDuration.apply(jobUpdateMaxDelaySecond, TimeUnit.SECONDS))
       Behaviors.setup[Message] {
@@ -59,7 +63,7 @@ object JobUpdateActor extends Logging {
                   val updates = queued.getOrElseUpdate(jobId, mutable.ArrayBuffer.empty)
                   if (updates.nonEmpty) {
                     try {
-                      logger.info(s"Writing updates: $jobId $updates")
+                      logger.debug(s"Writing updates: $jobId $updates")
                       jobRepoIntf.updateJob(jobId, updates.toSeq)
                       updates.clear()
                       queued.remove(jobId)

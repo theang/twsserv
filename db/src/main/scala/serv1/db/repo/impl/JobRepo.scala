@@ -214,6 +214,9 @@ object JobRepo extends DBJsonFormats with JobRepoIntf with Logging {
         updateJob[TickLoadingJobState](jobId, { t: TickLoadingJobState =>
           t.copy(status = JobStatuses.FINISHED).asInstanceOf[JobState].toJson.prettyPrint
         }, "", "Can update only Tick Loading Job")
+      case _ =>
+        logger.warn(s"Empty job: $jobId")
+        true
     }
   }
 
