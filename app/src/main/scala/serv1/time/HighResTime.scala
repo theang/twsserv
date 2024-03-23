@@ -5,6 +5,7 @@ import slick.util.Logging
 import java.time.Instant
 
 object HighResTime extends Logging {
+  val milliSecond: Long = 1_000_000
   val second: Long = 1_000_000_000
   val tenSeconds: Long = second * 10
   val lastEpochNanoSecond: ThreadLocal[Long] = ThreadLocal.withInitial(() => currentNanosSlow)

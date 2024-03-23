@@ -11,6 +11,7 @@ object HistoricalDataType extends Enumeration {
   val TRADES: HistoricalDataType = HistoricalDataTypeVal(0)
   val HISTORICAL_VOLATILITY: HistoricalDataType = HistoricalDataTypeVal(6)
   val OPTION_IMPLIED_VOLATILITY: HistoricalDataType = HistoricalDataTypeVal(7)
+  val AGGTRADES: HistoricalDataType = HistoricalDataTypeVal(14)
 
   val intToHistoricalDataTypeMap: Map[Int, HistoricalDataType] = HistoricalDataType.values.map {
     v => (v.asInstanceOf[HistoricalDataTypeVal].intVal, v)
