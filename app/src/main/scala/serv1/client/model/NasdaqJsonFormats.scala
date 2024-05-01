@@ -1,5 +1,7 @@
 package serv1.client.model
 
+import serv1.db.types.EarningsTimeType
+import serv1.db.types.EarningsTimeType.EarningsTimeType
 import serv1.util.LocalDateTimeUtil
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, RootJsonFormat}
 
@@ -43,9 +45,23 @@ trait NasdaqJsonFormats extends DefaultJsonProtocol {
       }
     }
 
+    def convertEarningsTime(v: String): Option[EarningsTimeType] = {
+      if (v.isBlank) {
+        None
+      } else if (v == "time-not-supplied") {
+        Some(EarningsTimeType.TIME_NOT_SUPPLIED)
+      } else if (v == "time-pre-market") {
+        Some(EarningsTimeType.TIME_PRE_MARKET)
+      } else if (v == "time-after-hours") {
+        Some(EarningsTimeType.TIME_AFTER_HOURS)
+      } else {
+        None
+      }
+    }
+
     override def read(json: JsValue): Earnings = {
-      List("symbol", "eps", "marketCap", "fiscalQuarterEnding", "epsForecast", "lastYearRptDt", "lastYearEPS").map(json.asJsObject.fields.get) match {
-        case Seq(symbol, eps, marketCap, fiscalQuarterEnding, epsForecast, lastYearRptDt, lastYearEPS) =>
+      List("symbol", "eps", "marketCap", "fiscalQuarterEnding", "epsForecast", "lastYearRptDt", "lastYearEPS", "time").map(json.asJsObject.fields.get) match {
+        case Seq(symbol, eps, marketCap, fiscalQuarterEnding, epsForecast, lastYearRptDt, lastYearEPS, time) =>
           Earnings(symbol.get.convertTo[String], "",
             eps.isEmpty,
             fiscalQuarterEnding.get.convertTo[String],
@@ -53,7 +69,8 @@ trait NasdaqJsonFormats extends DefaultJsonProtocol {
             epsForecast.flatMap(v => convertMoney(v.convertTo[String])),
             marketCap.flatMap(v => convertMoney(v.convertTo[String])),
             lastYearEPS.flatMap(v => convertMoney(v.convertTo[String])),
-            lastYearRptDt.flatMap(v => convertDate(v.convertTo[String]))
+            lastYearRptDt.flatMap(v => convertDate(v.convertTo[String])),
+            time.flatMap(v => convertEarningsTime(v.convertTo[String]))
           )
       }
     }

@@ -3,6 +3,7 @@ package serv1.db.repo.impl
 import serv1.db.DB
 import serv1.db.repo.intf.EventRepoIntf
 import serv1.db.schema.{EarningsEvent, EarningsEventTable, Event, EventTable}
+import serv1.db.types.EarningsTimeType
 import serv1.model.event.EarningsEventType
 import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile.api._
@@ -20,6 +21,7 @@ object EventRepo extends EventRepoIntf with Logging {
 
   def insertEarningsEvent(event: EarningsEventType): DBIOAction[Unit, NoStream, Effect.Read with Effect.Write with Effect.Transactional]
   = {
+    val updateTime = event.earningsTime.exists(_ != EarningsTimeType.TIME_NOT_SUPPLIED)
     val eventQuery = EventTable.query
     val earningsEventQuery = EarningsEventTable.query
     (for {
@@ -28,19 +30,23 @@ object EventRepo extends EventRepoIntf with Logging {
       result <- (eventQuery returning eventQuery.map(_.id)).insertOrUpdate(updatedEvent)
       eventId = if (result.isEmpty) existingEvent.get.id else result.get
       existingEarningsEvent <- EarningsEventTable.query.filter(eev => eev.eventId === eventId).result.headOption
-      earningsEvent = existingEarningsEvent.map(_.copy(forecast = event.forecast,
-        fiscalQuarterEnding = event.fiscalQuarterEnding,
-        eps = event.eps,
-        epsForecast = event.epsForecast,
-        marketCap = event.marketCap,
-        lastYearEps = event.lastYearEps,
-        lastYearDate = event.lastYearDate)) getOrElse EarningsEvent(0, eventId, event.forecast,
+      earningsEvent = existingEarningsEvent.map { v =>
+        v.copy(forecast = event.forecast,
+          fiscalQuarterEnding = event.fiscalQuarterEnding,
+          eps = event.eps,
+          epsForecast = event.epsForecast,
+          marketCap = event.marketCap,
+          lastYearEps = event.lastYearEps,
+          lastYearDate = event.lastYearDate,
+          time = if (updateTime) event.earningsTime else v.time)
+      } getOrElse EarningsEvent(0, eventId, event.forecast,
         event.fiscalQuarterEnding,
         event.eps,
         event.epsForecast,
         event.marketCap,
         event.lastYearEps,
-        event.lastYearDate)
+        event.lastYearDate,
+        event.earningsTime)
       _ <- earningsEventQuery.insertOrUpdate(earningsEvent)
     } yield ()).transactionally
   }
@@ -53,7 +59,7 @@ object EventRepo extends EventRepoIntf with Logging {
     result match {
       case (event: Event, earningsEvent: EarningsEvent) => EarningsEventType(event.symbol, event.time, event.info,
         earningsEvent.forecast, earningsEvent.fiscalQuarterEnding, earningsEvent.eps, earningsEvent.epsForecast,
-        earningsEvent.marketCap, earningsEvent.lastYearEps, earningsEvent.lastYearDate)
+        earningsEvent.marketCap, earningsEvent.lastYearEps, earningsEvent.lastYearDate, earningsEvent.time)
     }
   }
 
