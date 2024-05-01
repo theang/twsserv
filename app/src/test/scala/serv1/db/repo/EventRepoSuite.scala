@@ -6,12 +6,13 @@ import org.scalatestplus.junit.JUnitRunner
 import serv1.db.TestData
 import serv1.db.repo.impl.EventRepo
 import serv1.db.repo.intf.EventRepoIntf
+import serv1.db.types.EarningsTimeType
 import serv1.model.event.EarningsEventType
 import slick.util.Logging
 
 @RunWith(classOf[JUnitRunner])
 class EventRepoSuite extends AnyFunSuite with Logging {
-  def createEarningsEvent(date: Long): EarningsEventType = EarningsEventType(TestData.xomTicker, date, "", forecast = true, "", Some(1.0), Some(1), Some(1), Some(1), Some(1))
+  def createEarningsEvent(date: Long): EarningsEventType = EarningsEventType(TestData.xomTicker, date, "", forecast = true, "", Some(1.0), Some(1), Some(1), Some(1), Some(1), Some(EarningsTimeType.TIME_PRE_MARKET))
 
   test("EventRepo test, create event, update event, check event") {
     val repo: EventRepoIntf = EventRepo

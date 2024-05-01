@@ -1,7 +1,9 @@
 package serv1.db
 
+import serv1.db.exception.DatabaseException
 import serv1.db.repo.impl.ConfigRepo
 import serv1.db.schema._
+import serv1.db.schema.generic.TableSchemaUpdater
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.meta.MTable
 import slick.jdbc.{SQLActionBuilder, SetParameter}
@@ -38,11 +40,12 @@ object DB extends Logging {
     }
   }
 
-  def createTables(dbSchemaVersion: String = Configuration.DATABASE_SCHEMA_VERSION): Seq[Unit] = {
-    val dbTables = Await.result(db.run(MTable.getTables), Duration.Inf).map(_.name.name)
+  def createTables(dbSchemaVersion: String = Configuration.DATABASE_SCHEMA_VERSION): Unit = {
+    val dbTables = Await.result(db.run(MTable.getTables), Duration.Inf)
+    val dbTableNames = dbTables.map(_.name.name)
     val tablesBeforeSchemaUpgrade = List(
       ConfigTable.query
-    ).filter(q => !dbTables.contains(q.baseTableRow.tableName))
+    ).filter(q => !dbTableNames.contains(q.baseTableRow.tableName))
     val actionBeforeSchemaUpgrade = for (t <- tablesBeforeSchemaUpgrade) yield t.schema.createIfNotExists
     Await.result(db.run(DBIO.sequence(actionBeforeSchemaUpgrade)), Duration.Inf)
 
@@ -57,8 +60,16 @@ object DB extends Logging {
       ExchangeTable.query,
       EventTable.query,
       EarningsEventTable.query
-    ).filter(q => !dbTables.contains(q.baseTableRow.tableName))
+    ).filter(q => !dbTableNames.contains(q.baseTableRow.tableName))
     val action = for (t <- tables) yield t.schema.createIfNotExists
     Await.result(db.run(DBIO.sequence(action)), Duration.Inf)
+    // update schemas
+    dbTables.find(_.name.name == EarningsEventTable.query.baseTableRow.tableName) match {
+      case Some(mTable) =>
+        val schemaUpdaterEarningsEvent = new TableSchemaUpdater[EarningsEvent, EarningsEventTable, TableQuery[EarningsEventTable]]()
+        schemaUpdaterEarningsEvent.update(EarningsEventTable.query, mTable)
+      case _ =>
+        throw new DatabaseException(s"Table ${EarningsEventTable.query.baseTableRow.tableName} does not exists")
+    }
   }
 }

@@ -1,5 +1,6 @@
 package serv1.db.schema
 
+import serv1.db.types.EarningsTimeType.EarningsTimeType
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Tag
 
@@ -26,7 +27,9 @@ class EarningsEventTable(tag: Tag) extends Table[EarningsEvent](tag, _tableName 
 
   def lastYearDate = column[Option[Long]]("LAST_YEAR_DATE")
 
-  def * = (id, eventId, forecast, fiscalQuarterEnding, eps, epsForecast, marketCap, lastYearEps, lastYearDate) <> (EarningsEvent.tupled, EarningsEvent.unapply)
+  def time = column[Option[EarningsTimeType]]("TIME")
+
+  def * = (id, eventId, forecast, fiscalQuarterEnding, eps, epsForecast, marketCap, lastYearEps, lastYearDate, time) <> (EarningsEvent.tupled, EarningsEvent.unapply)
 
   def fiscalQuarterIndex = index("EARNINGS_EVENT_FISCAL_QUARTER_INDEX", fiscalQuarterEnding)
 
